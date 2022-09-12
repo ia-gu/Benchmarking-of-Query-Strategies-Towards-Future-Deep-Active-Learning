@@ -1,0 +1,23 @@
+# @package _group_
+
+mlflow_runname: pretraining
+
+train_parameters: 
+  lr: 0.05
+  batch_size: 512
+  seed: 9999
+  start_epoch: 0
+  n_epoch: 800
+  dim: 2048
+  pred_dim: 512
+  fix-pred-lr: false
+
+defaults: 
+  - dataset: CIFAR10
+
+hydra:
+  run:
+    dir: logs/${mlflow_runname}/${dataset.name}/${train_parameters.seed}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/${mlflow_runname}/${dataset.name}/${train_parameters.seed}
+    subdir: ${now:%Y-%m-%d_%H-%M-%S}

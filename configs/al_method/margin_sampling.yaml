@@ -1,0 +1,3 @@
+strategy: margin_sampling
+batch_size: 20
+lr: 0.01

@@ -1,0 +1,3 @@
+strategy: adversarial_deepfool
+batch_size: 20
+lr: 0.01

@@ -1,0 +1,22 @@
+# @package _group_
+
+mlflow_runname: base
+
+train_parameters: 
+  lr: 0.01
+  batch_size: 20
+  seed: 9999
+  n_epoch: 200
+  isreset: true
+  ssl: false
+
+defaults:
+  - dataset: CIFAR10
+  - al_method: random_sampling
+
+hydra:
+  run:
+    dir: logs/${mlflow_runname}/${dataset.name}/${al_method.strategy}/${train_parameters.seed}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/${mlflow_runname}/${dataset.name}/${al_method.strategy}/${train_parameters.seed}
+    subdir: ${now:%Y-%m-%d_%H-%M-%S}

@@ -1,0 +1,4 @@
+name: CIFAR10
+budget: 5000
+rounds: 10
+initial_points: 5000

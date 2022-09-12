@@ -1,0 +1,4 @@
+name: ImageNet
+budget: 128016
+rounds: 10
+initial_points: 128020
