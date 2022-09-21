@@ -229,9 +229,9 @@ class TrainClassifier:
             gc.collect()
 
             if self.cfg.dataset.name == 'ImageNet' and torch.cuda.device_count()>1:
-                mp.spawn(dt.ddp_train, args=(self.classes, 0, self.log_path), nprocs=torch.cuda.device_count())
+                mp.spawn(dt.ddp_train, args=(self.classes, rd, self.log_path), nprocs=torch.cuda.device_count())
             else:
-                dt.train(self.classes, 0, self.log_path)
+                dt.train(self.classes, rd, self.log_path)
             
             t2 = time.time()            
             clf = self.getModel()

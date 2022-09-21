@@ -163,7 +163,7 @@ class data_train:
 
         if self.args['isreset']:
             if self.args['ssl']:
-                checkpoint = torch.load('./weights/'+self.dataset_args['name']+'/checkpoint.pth.tar', map_location="cpu")
+                checkpoint = torch.load('./weights/'+self.dataset_args['name']+'/'+str(self.args['seed'])+'/checkpoint.pth.tar', map_location="cpu")
                 state_dict = checkpoint['state_dict']
                 for k in list(state_dict.keys()):
                     # retain only encoder up to before the embedding layer
@@ -244,13 +244,13 @@ class data_train:
 
         if self.args['isreset']:
             if self.args['ssl']:
-                checkpoint = torch.load('./weights/'+self.dataset_args['name']+'/checkpoint.pth.tar', map_location="cpu")
+                checkpoint = torch.load('./weights/'+self.dataset_args['name']+'/'+str(self.args['seed'])+'/checkpoint.pth.tar', map_location="cpu")
                 state_dict = checkpoint['state_dict']
                 for k in list(state_dict.keys()):
                     # retain only encoder up to before the embedding layer
-                    if k.startswith('module.encoder') and not k.startswith('module.encoder.fc'):
+                    if k.startswith('encoder') and not k.startswith('encoder.fc'):
                         # remove prefix
-                        state_dict[k[len("module.encoder."):]] = state_dict[k]
+                        state_dict[k[len("encoder."):]] = state_dict[k]
                     # delete renamed or unused k
                 self.net.load_state_dict(state_dict, strict=False)
                 del state_dict
