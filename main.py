@@ -45,8 +45,8 @@ class TrainClassifier:
         return net
 
     def getData(self, data_cfg):
-        # download_path needs to be modified by yourself
-        # data_path also needs to be modified by yourself
+        # download_path needs to be modified
+        # data_path also needs to be modified
 
         if data_cfg.name == 'CIFAR10':
             self.model_name = 'modified_resnet'
@@ -177,14 +177,13 @@ class TrainClassifier:
             strategy = ClusterMarginSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
         else:
             raise IOError('Enter Valid Strategy!')
-        del selected_strat, strategy_args
         
         logging.info('#########################')
         logging.info('round0')
         logging.info('#########################')
         dt = data_train(train_dataset, net, self.cfg.train_parameters, self.cfg.dataset)
 
-        # Use DDP when your dataset is ImageNet
+        # Use DDP when your dataset is ImageNet and use multi-GPU
         if self.cfg.dataset.name == 'ImageNet' and torch.cuda.device_count()>1:
             os.environ['MASTER_ADDR'] = 'localhost'
             os.environ['MASTER_PORT'] = '12355'
@@ -199,8 +198,8 @@ class TrainClassifier:
         acc = np.zeros(n_rounds)
         acc[0], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
         for i in range(self.num_classes):
-            mlflow.log_metric(self.classes[i], (100*class_correct[i]/class_total[i]), step=len(train_dataset))
-        mlflow.log_metric('final_acc', acc[0]*100, step=len(train_dataset))
+            mlflow.log_metric(self.classes[i], (class_correct[i]/class_total[i]), step=len(train_dataset))
+        mlflow.log_metric('final_acc', acc[0], step=len(train_dataset))
         logging.info(f'training points: {len(train_dataset)}')
         logging.info(f'test accuracy: {round(acc[0]*100, 2)}')
         logging.info(f'trainning time: {time.time()-t}')
@@ -221,11 +220,8 @@ class TrainClassifier:
             remain_idx = list(set(range(len(unlabeled_dataset)))-set(idx))
             unlabeled_dataset = Subset(unlabeled_dataset, remain_idx)
 
-            print('Total training points in this round', len(train_dataset))
-
             strategy.update_data(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset))
             dt = data_train(train_dataset, net, self.cfg.train_parameters, self.cfg.dataset)
-            del idx, remain_idx, clf
             gc.collect()
 
             if self.cfg.dataset.name == 'ImageNet' and torch.cuda.device_count()>1:
@@ -238,8 +234,7 @@ class TrainClassifier:
             clf.load_state_dict(torch.load(self.log_path+'/weight.pth', map_location="cpu"), strict=False)
             strategy.update_model(clf)
             acc[rd], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
-            print('Testing Accuracy:', acc[rd])
-            mlflow.log_metric('final_acc', acc[rd]*100, step=len(train_dataset))
+            mlflow.log_metric('final_acc', acc[rd], step=len(train_dataset))
             for i in range(self.num_classes):
                 mlflow.log_metric(self.classes[i], 100*class_correct[i]/class_total[i], step=len(train_dataset))
             logging.info(f'training points: {len(train_dataset)}')

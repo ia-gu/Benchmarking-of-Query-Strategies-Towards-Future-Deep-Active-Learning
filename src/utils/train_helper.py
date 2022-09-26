@@ -76,6 +76,10 @@ class data_train:
         -------
         accFinal: float
             The fraction of data points whose predictions by the current model match their targets
+        class_correct: list
+            The list of correct numbers of each class
+        class_total: list
+            The list of total numbers of each class
         """	
         self.clf = clf
 
@@ -228,7 +232,7 @@ class data_train:
         Initiates the training loop.
 
         rank: int
-            The id of GPU (Given automatically)
+            The id of current GPU (Given automatically)
         Other requiered contents are same as the ddp_train
 
         """

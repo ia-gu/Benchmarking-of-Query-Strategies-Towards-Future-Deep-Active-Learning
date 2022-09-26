@@ -1,4 +1,3 @@
-from audioop import cross
 import numpy as np
 import h5py
 from PIL import Image
@@ -20,7 +19,7 @@ for i in range(1, 6):
 
 # If there is dataset already, skip this code
 if os.path.exists('downloaded_data/BrainTumor/1'):
-    print('BurainTumor data may exist')
+    print('BurainTumor data may exist, please confirm')
     pass
 else:
     for i in range(1, len(cross_validation_index[0])+1):

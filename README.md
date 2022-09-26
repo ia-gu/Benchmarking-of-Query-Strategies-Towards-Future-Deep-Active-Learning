@@ -2,7 +2,7 @@
 
 The repository contains a Benchmark Tool for Active Learning, SimSiam Pre-training in Python/Pytorch.
 
-The repository is based on our paper: 
+The repository is based on [our paper]()
 
 ## Summary
 
@@ -15,7 +15,7 @@ Some of the algorithms currently implemented here include the following:
     - [BALD](https://arxiv.org/pdf/1703.02910.pdf)
     - [Batch-BALD](https://arxiv.org/pdf/1906.08158.pdf)
 - Diversity Based Sampling
-    - [Kmeans Sampling]
+    - Kmeans Sampling
     - [Coreset](https://openreview.net/pdf?id=H1aIuk-RW)
     - [Adversarial BIM](https://arxiv.org/pdf/1904.00370.pdf)
     - [Adversarial DeepFool](https://arxiv.org/pdf/1904.00370.pdf)
@@ -28,7 +28,7 @@ Some of the algorithms currently implemented here include the following:
 
 If you want to know the detail of each implementations, refer original paper or [ours]().
 
-SSL implemented here is [SimSiam](https://github.com/facebookresearch/simsiam)
+SSL implemented here is [SimSiam](https://github.com/facebookresearch/simsiam). This is based on the idea from [here](https://arxiv.org/pdf/2108.11458.pdf)
 
 You can get compared dataset from below: 
 
@@ -39,7 +39,8 @@ You can get compared dataset from below:
 - [BrainTumor](https://figshare.com/articles/dataset/brain_tumor_dataset/1512427)
 - [GAPs](https://www.tu-ilmenau.de/universitaet/fakultaeten/fakultaet-informatik-und-automatisierung/profil/institute-und-fachgebiete/institut-fuer-technische-informatik-und-ingenieurinformatik/fachgebiet-neuroinformatik-und-kognitive-robotik/data-sets-code/german-asphalt-pavement-distress-dataset-gaps)
 
-We experiment with 5000 images on OCT, the list we used is in oct_ids.txt
+We experiment with 5000 images on OCT, because it is too easy to compare the algorithms.
+The list we used is in ```oct_ids.txt```
 
 The repository is forked from [distil](https://github.com/decile-team/distil)
 
@@ -75,8 +76,8 @@ Implement below for SSL
 
 ## Some more details
 ```get_brain_data.py``` and ```get_gaps.py``` is made because we need image data when we implement SimSiam.
-If you do not use SSL, you can modify these.
 
 We prepare two types of ResNet18. One is the original model given by distil, other is from [here](https://github.com/kuangliu/pytorch-cifar).
-This model is for CIFAR dataset because CIFAR is 32*32 image, 7*7 carnel of original model is too big.
+This model is for CIFAR dataset because the size of CIFAR images is 32*32, 7*7 carnel of original model is too big.
 
+In our paper, we did not implement ImageNet experiments, due to time consuming. However, there are few repository which can implement ImageNet×AL experiments, so we prepare it. If you choose ImageNet for dataset and use multi-GPU, the repository automatically implement DDP experiments.

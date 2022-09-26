@@ -132,8 +132,6 @@ def main(cfg : DictConfig):
             os.chdir(hydra.utils.get_original_cwd())
             config = OmegaConf.to_yaml(cfg)
             config = yaml.safe_load(config)
-            print('dataset: ', end='')
-            print(config['dataset'])
             args = config
             mlflow.log_params(cfg.dataset)
             mlflow.log_params(cfg.train_parameters)
@@ -150,7 +148,6 @@ def main(cfg : DictConfig):
             for i in range(torch.cuda.device_count()):
                 gpu_ids.append(i)
             
-            print(f'device: {device}')
             print(f'use gpu: {gpu_ids}')
 
             # fit batch_size
@@ -198,7 +195,6 @@ def main_worker(device, gpu_ids, args):
     os.makedirs('weights/'+args['dataset']['name']+'/'+str(args['train_parameters']['seed']), exist_ok=True)
 
     for epoch in range(args['train_parameters']['start_epoch'], args['train_parameters']['n_epoch']):
-        print('adjust_learning_rate')
         adjust_learning_rate(optimizer, init_lr, epoch, args)
         print(optimizer)
 
@@ -219,7 +215,6 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
         prefix="Epoch: [{}]".format(epoch))
 
     # switch to train mode
-    print('train_mode')
     model.train()
 
     # end = time.time()
@@ -302,7 +297,6 @@ def adjust_learning_rate(optimizer, init_lr, epoch, args):
             param_group['lr'] = init_lr
         else:
             param_group['lr'] = cur_lr
-    print(f'current lr: {param_group["lr"]}')
 
 if __name__ == '__main__':
 

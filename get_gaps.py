@@ -37,6 +37,7 @@ else:
     x_train = np.concatenate([x_train0, x_train1])
     y_train = np.concatenate([y_train0, y_train1])
 
+    # dtype of original images is not uint8, for PIL library, change them to uint8 images
     for i in range(len(x_train)):
         nd_array = x_train[i][0]
         nd_array -= nd_array.min()
