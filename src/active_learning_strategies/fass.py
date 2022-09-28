@@ -36,31 +36,19 @@ class FASS(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-        - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-        - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
-        - **submod_args**: Parameters for the submodular selection as described in SubmodularSampling (dict, optional)
         - **uncertainty_measure**: Describes which measure of uncertainty should be used. This should be one of 'entropy', 'least_confidence', or 'margin' (string, optional)
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}):
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
+        super(FASS, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
         
-        super(FASS, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)
-        
-        if 'submod_args' in args:
-            self.submod_args = args['submod_args']
-        else:
-            self.submod_args = {'submod': 'facility_location',
-                                'metric': 'cosine'}
-            self.args['submod_args'] = self.submod_args
-        
-        if 'uncertainty_measure' in args:
-            self.uncertainty_measure = args['uncertainty_measure']
-        else:
-            self.uncertainty_measure = 'entropy'
+        self.submod_cfg = {'submod': 'facility_location',
+                            'metric': 'cosine'}
+        self.uncertainty_measure = self.cfg.uncertainty_measure
         
     def select(self, budget, top_n=5):
         
@@ -89,23 +77,23 @@ class FASS(Strategy):
         # Now, select the top 'filtered_set_size' most uncertain points using the 
         # specified measure of uncertainty (already implemented in strategies!)
         if self.uncertainty_measure == 'entropy':
-            uncertainty_strategy = EntropySampling(self.labeled_dataset, self.unlabeled_dataset, self.model, self.target_classes, self.args)
+            uncertainty_strategy = EntropySampling(self.labeled_dataset, self.unlabeled_dataset, self.model, self.target_classes, self.cfg)
         elif self.uncertainty_measure == 'least_confidence':
-            uncertainty_strategy = LeastConfidenceSampling(self.labeled_dataset, self.unlabeled_dataset, self.model, self.target_classes, self.args)
+            uncertainty_strategy = LeastConfidenceSampling(self.labeled_dataset, self.unlabeled_dataset, self.model, self.target_classes, self.cfg)
         elif self.uncertainty_measure == 'margin':
-            uncertainty_strategy = MarginSampling(self.labeled_dataset, self.unlabeled_dataset, self.model, self.target_classes, self.args)
+            uncertainty_strategy = MarginSampling(self.labeled_dataset, self.unlabeled_dataset, self.model, self.target_classes, self.cfg)
         else:
             raise ValueError("uncertainty_measure must be one of 'entropy', 'least_confidence', or 'margin'")
         
         filtered_idxs = uncertainty_strategy.select(filtered_set_size)
         
         # Now, use submodular selection to choose points from the filtered subset.
-        # Ensure the representation type is in the submod_args dict.
-        if 'representation' not in self.submod_args:
-            self.submod_args['representation'] = 'fc'
+        # Ensure the representation type is in the submod_cfg dict.
+        if 'representation' not in self.submod_cfg:
+            self.submod_cfg['representation'] = 'fc'
             
         filtered_unlabeled_set = Subset(self.unlabeled_dataset, filtered_idxs)
-        submodular_selection_strategy = SubmodularSampling(self.labeled_dataset, filtered_unlabeled_set, self.model, self.target_classes, self.args)
+        submodular_selection_strategy = SubmodularSampling(self.labeled_dataset, filtered_unlabeled_set, self.model, self.target_classes, self.cfg)
         greedy_indices = submodular_selection_strategy.select(budget)
         
         # Lastly, map the indices of the filtered set to the indices of the unlabeled set

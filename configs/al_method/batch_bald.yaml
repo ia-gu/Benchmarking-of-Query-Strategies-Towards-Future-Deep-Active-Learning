@@ -1,3 +1,6 @@
 strategy: batch_bald
 batch_size: 20
 lr: 0.01
+n_drop: 40
+n_samples: 1000
+mod_inject: fc

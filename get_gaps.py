@@ -50,7 +50,6 @@ else:
         cnt[int(y_train[i])] += 1
         img_path = 'downloaded_data/GAPs/v2/train/' + classes[int(y_train[i])] + '/' + str(cnt[int(y_train[i])])
         img.save(img_path+'.png')
-        print(i)
 
 if os.path.exists('downloaded_data/GAPs/v2/test/Potholes'):
     print('GAPs test_dataset may be ready')

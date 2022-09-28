@@ -1,3 +1,5 @@
 strategy: cluster_margin
 batch_size: 20
 lr: 0.01
+cluster_size: origin
+metric: cosine

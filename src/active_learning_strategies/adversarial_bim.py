@@ -33,33 +33,20 @@ class AdversarialBIM(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: Batch size to be used inside strategy class (int, optional)
-        - **device**: The device that this strategy class should use for computation (string, optional)
-        - **loss**: The loss that should be used for relevant computations (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
         - **eps**: Epsilon value for gradients (float, optional)
         - **verbose**: Whether to print more output (bool, optional)
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}):
-        if 'eps' in args:
-            self.eps = args['eps']
-        else:
-            self.eps = 0.05
-            
-        if 'verbose' in args:
-            self.verbose = args['verbose']
-        else:
-            self.verbose = False
-            
-        if 'stop_iterations_by_count' in args:
-            self.stop_iterations_by_count = args['stop_iterations_by_count']
-        else:
-            self.stop_iterations_by_count = 1000
-        
-        super(AdversarialBIM, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args={})
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
+        super(AdversarialBIM, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
+       
+        self.eps = self.cfg.eps
+        self.verbose = self.cfg.verbose
+        self.stop_iterations_by_count = self.cfg.stop_iterations_by_count
 
     def cal_dis(self, x):
         nx = torch.unsqueeze(x, 0).detach()

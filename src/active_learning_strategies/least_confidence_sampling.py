@@ -32,17 +32,14 @@ class LeastConfidenceSampling(ScoreStreamingStrategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-        - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-        - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}):
-        
-        super(LeastConfidenceSampling, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
+        super(LeastConfidenceSampling, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
     
     def acquire_scores(self, unlabeled_buffer):
         

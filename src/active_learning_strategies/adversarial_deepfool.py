@@ -36,24 +36,17 @@ class AdversarialDeepFool(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-        - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-        - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
         - **max_iter**: Maximum Number of Iterations (int, optional)
     """
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}):
-        """
-        Constructor method
-        """
-        if 'max_iter' in args:
-            self.max_iter = args['max_iter']
-        else:
-            self.max_iter = 50
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
+        super(AdversarialDeepFool, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
+
+        self.max_iter = self.cfg.max_iter
             
-        super(AdversarialDeepFool, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args={})
 
 
     def deepfool(self, image, net, num_classes=10, overshoot=0.02):

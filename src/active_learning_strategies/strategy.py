@@ -4,26 +4,15 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 class Strategy:
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}): #
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
         
         self.labeled_dataset = labeled_dataset
         self.unlabeled_dataset = unlabeled_dataset
         self.model = net
         self.target_classes = nclasses
-        self.args = args
-        
-        if 'batch_size' not in args:
-            args['batch_size'] = 20
-        
-        if 'device' not in args:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        else:
-            self.device = args['device']
-            
-        if 'loss' not in args:
-            self.loss = F.cross_entropy
-        else:
-            self.loss = args['loss']
+        self.cfg = cfg
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.loss = F.cross_entropy
 
     def select(self, budget):
         pass
@@ -53,7 +42,7 @@ class Strategy:
         P = torch.zeros(len(to_predict_dataset)).long().to(self.device)
         
         # Create a dataloader object to load the dataset
-        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.args['batch_size'], shuffle = False, num_workers=8, pin_memory=True)
+        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.cfg.batch_size, shuffle = False, num_workers=8, pin_memory=True)
         
         evaluated_instances = 0
         loop = tqdm(to_predict_dataloader, unit='batch', desc='| Prediction |', dynamic_ncols=True)
@@ -84,7 +73,7 @@ class Strategy:
         probs = torch.zeros([len(to_predict_dataset), self.target_classes]).to(self.device)
         
         # Create a dataloader object to load the dataset
-        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.args['batch_size'], shuffle = False, num_workers=8, pin_memory=True)
+        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.cfg.batch_size, shuffle = False, num_workers=8, pin_memory=True)
         loop = tqdm(to_predict_dataloader, unit='batch', desc='| Prediction Prob |', dynamic_ncols=True)
         
         evaluated_instances = 0
@@ -118,7 +107,7 @@ class Strategy:
         probs = torch.zeros([len(to_predict_dataset), self.target_classes]).to(self.device)
         
         # Create a dataloader object to load the dataset
-        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.args['batch_size'], shuffle = False, num_workers=8, pin_memory=True)
+        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.cfg.batch_size, shuffle = False, num_workers=8, pin_memory=True)
         
         with torch.no_grad():
             # Repeat n_drop number of times to obtain n_drop dropout samples per data instance
@@ -154,7 +143,7 @@ class Strategy:
         probs = torch.zeros([n_drop, len(to_predict_dataset), self.target_classes]).to(self.device)
         
         # Create a dataloader object to load the dataset
-        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.args['batch_size'], shuffle = False, num_workers=8, pin_memory=True)
+        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.cfg.batch_size, shuffle = False, num_workers=8, pin_memory=True)
 
         with torch.no_grad():
             # Repeat n_drop number of times to obtain n_drop dropout samples per data instance
@@ -187,7 +176,7 @@ class Strategy:
         embedding = torch.zeros([len(to_predict_dataset), self.model.get_embedding_dim()]).to(self.device)
         
         # Create a dataloader object to load the dataset
-        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.args['batch_size'], shuffle = False)
+        to_predict_dataloader = DataLoader(to_predict_dataset, batch_size = self.cfg.batch_size, shuffle = False)
         
         evaluated_instances = 0
         loop = tqdm(to_predict_dataloader, unit='batch', desc='| Embedding |', dynamic_ncols=True)
@@ -227,7 +216,7 @@ class Strategy:
             raise ValueError("Grad embedding type not supported: Pick one of 'bias', 'fc', or 'bias_fc'")
           
         # Create a dataloader object to load the dataset
-        dataloader = DataLoader(dataset, batch_size = self.args['batch_size'], shuffle = False)  
+        dataloader = DataLoader(dataset, batch_size = self.cfg.batch_size, shuffle = False)  
           
         evaluated_instances = 0
         loop = tqdm(dataloader, unit='batch', desc='| Gradient Embedding |', dynamic_ncols=True)
@@ -310,7 +299,7 @@ class Strategy:
         return torch.squeeze(feature[layer_name])
 
     def get_feature_embedding(self, dataset, unlabeled, layer_name='avgpool'):
-        dataloader = DataLoader(dataset, batch_size = self.args['batch_size'], shuffle = False)
+        dataloader = DataLoader(dataset, batch_size = self.cfg.batch_size, shuffle = False)
         loop = tqdm(dataloader, unit='batch', desc='| Embedding |', dynamic_ncols=True)
 
         features = []

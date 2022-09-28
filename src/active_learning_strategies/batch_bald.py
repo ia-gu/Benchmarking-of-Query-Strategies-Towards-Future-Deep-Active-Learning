@@ -23,42 +23,24 @@ class BatchBALDDropout(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-        - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-        - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
         - **n_drop**: Number of dropout runs to use to generate MC samples (int, optional)
         - **n_samples**: Number of samples to use in computing joint entropy (int, optional)
     """
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}):
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
+        super(BatchBALDDropout, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
         
-        """
-        Constructor method
-        """
-        
-        if 'n_drop' in args:
-            self.n_drop = args['n_drop']
-        else:
-            self.n_drop = 40
-            
-        if 'n_samples' in args:
-            self.n_samples = args['n_samples']
-        else:
-            self.n_samples = 1000
-        
-        if 'mod_inject' in args:
-            self.mod_inject = args['mod_inject']
-        else:
-            self.mod_inject = 'fc'
-        
-        super(BatchBALDDropout, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args={})
+        self.n_drop = self.cfg.n_drop
+        self.n_samples = self.cfg.n_samples
+        self.mod_inject = self.cfg.mod_inject
 
     def do_MC_dropout_before_linear(self, unlabeled_dataset, n_drop):
         
         # Procure a loader on the supplied dataset
-        loader_te = DataLoader(unlabeled_dataset, shuffle=False, batch_size = self.args['batch_size'], num_workers=8, pin_memory=True)
+        loader_te = DataLoader(unlabeled_dataset, shuffle=False, batch_size = self.cfg.batch_size, num_workers=8, pin_memory=True)
         
         # Check that there is a linear layer attribute in the supplied model
         try:

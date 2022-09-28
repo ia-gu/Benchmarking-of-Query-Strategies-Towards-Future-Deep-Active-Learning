@@ -37,23 +37,17 @@ class EntropySamplingDropout(ScoreStreamingStrategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-        - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-        - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
         - **n_drop**: Number of dropout runs (int, optional)
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}):
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
+        super(EntropySamplingDropout, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
         
-        super(EntropySamplingDropout, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)
-        
-        if 'n_drop' in args:
-            self.n_drop = args['n_drop']
-        else:
-            self.n_drop = 10
+        self.n_drop = self.cfg.n_drop
     
     def acquire_scores(self, unlabeled_buffer):
         

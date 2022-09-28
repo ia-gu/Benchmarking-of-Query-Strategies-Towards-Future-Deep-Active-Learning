@@ -21,14 +21,14 @@ class KMeansSampling(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: Batch size to be used inside strategy class (int, optional)
     """
 
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}):
-        super(KMeansSampling, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
+        super(KMeansSampling, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
 
     def select(self, budget):
         embeddings = self.get_embedding(self.unlabeled_dataset)

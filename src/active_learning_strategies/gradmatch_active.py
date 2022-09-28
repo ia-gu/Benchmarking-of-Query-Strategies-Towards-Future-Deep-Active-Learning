@@ -37,33 +37,19 @@ class GradMatchActive(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-        - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-        - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
-        - **grad_embedding**: The type of gradient embedding that should be used (string, optional)
-        - **omp_reg**: The regularization constant to use in GradMatch objective
     validation_dataset: torch.utils.data.Dataset, optional
         The validation dataset to use in GradMatch objective
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}, validation_dataset = None):
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None, validation_dataset = None):
+        super(GradMatchActive, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
         
-        # Run super constructor
-        super(GradMatchActive, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)
-        
-        if 'grad_embedding' not in args:
-            self.grad_embedding = 'bias_fc'
-        else:
-            self.grad_embedding = args['grad_embedding']
-        
-        if 'omp_reg' not in args:
-            self.omp_reg = 0
-        else:
-            self.omp_reg = args['omp_reg']
-        
+        self.grad_embedding = 'bias_fc'
+        self.omp_reg = 0
         self.validation_dataset = validation_dataset
             
     def fixed_weight_greedy_parallel(self, A, b, val_set_size, nnz):

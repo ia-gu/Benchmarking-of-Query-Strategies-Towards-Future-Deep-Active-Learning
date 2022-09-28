@@ -106,7 +106,6 @@ class TrainClassifier:
             self.classes = list()
             for i in range(1000):
                 self.classes.append(str(i))
-            print(f'ImageNet_Classes: {len(self.classes)}')
             train_data_path = '/imagenet_dataset/imagenet_2012/ILSVRC2012_img_train'
             test_data_path = '/imagenet_dataset/imagenet_2012/ILSVRC2012_img_val_for_ImageFolder'
             train_transform = transforms.Compose([transforms.RandomResizedCrop(224, scale=(0.2, 1.)), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
@@ -130,7 +129,6 @@ class TrainClassifier:
         torch.cuda.manual_seed_all(random_seed)
         torch.backends.cudnn.deterministic = True
         torch.use_deterministic_algorithms = True
-        del random_seed
         
         full_train_dataset, test_dataset = self.getData(self.cfg.dataset)
         net = self.getModel()
@@ -138,7 +136,7 @@ class TrainClassifier:
         budget = self.cfg.dataset.budget
         start = self.cfg.dataset.initial_points
         n_rounds = self.cfg.dataset.rounds
-        strategy_args = self.cfg.al_method
+        strategy_cfg = self.cfg.al_method
         nSamps = len(full_train_dataset)
         start_idxs = np.random.choice(nSamps, size=start, replace=False)
         train_dataset = Subset(full_train_dataset, start_idxs)
@@ -146,36 +144,36 @@ class TrainClassifier:
         del full_train_dataset, start, nSamps, start_idxs
 
         if selected_strat == 'badge':
-            strategy = BADGE(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = BADGE(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'glister':
-            strategy = GLISTER(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args,validation_dataset=None,\
+            strategy = GLISTER(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg,validation_dataset=None,\
                     typeOf='Diversity',lam=10)
         elif selected_strat == 'entropy_sampling':
-            strategy = EntropySampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = EntropySampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'margin_sampling':
-            strategy = MarginSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = MarginSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'least_confidence':
-            strategy = LeastConfidenceSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = LeastConfidenceSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'coreset':
-            strategy = CoreSet(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = CoreSet(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'fass':
-            strategy = FASS(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = FASS(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'random_sampling':
-            strategy = RandomSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = RandomSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'bald_dropout':
-            strategy = BALDDropout(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = BALDDropout(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'adversarial_bim':
-            strategy = AdversarialBIM(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = AdversarialBIM(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'kmeans_sampling':
-            strategy = KMeansSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = KMeansSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'adversarial_deepfool':
-            strategy = AdversarialDeepFool(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = AdversarialDeepFool(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'batch_bald':
-            strategy = BatchBALDDropout(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = BatchBALDDropout(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'submodlib':
-            strategy = SubmodularSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = SubmodularSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         elif selected_strat == 'cluster_margin':
-            strategy = ClusterMarginSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_args)
+            strategy = ClusterMarginSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
         else:
             raise IOError('Enter Valid Strategy!')
         
@@ -188,7 +186,7 @@ class TrainClassifier:
         if self.cfg.dataset.name == 'ImageNet' and torch.cuda.device_count()>1:
             os.environ['MASTER_ADDR'] = 'localhost'
             os.environ['MASTER_PORT'] = '12355'
-            mp.spawn(dt.ddp_train, args=(self.classes, 0, self.log_path), nprocs=torch.cuda.device_count())
+            mp.spawn(dt.ddp_train, cfg=(self.classes, 0, self.log_path), nprocs=torch.cuda.device_count())
         else:
             dt.train(self.classes, 0, self.log_path)
 
@@ -226,7 +224,7 @@ class TrainClassifier:
             gc.collect()
 
             if self.cfg.dataset.name == 'ImageNet' and torch.cuda.device_count()>1:
-                mp.spawn(dt.ddp_train, args=(self.classes, rd, self.log_path), nprocs=torch.cuda.device_count())
+                mp.spawn(dt.ddp_train, cfg=(self.classes, rd, self.log_path), nprocs=torch.cuda.device_count())
             else:
                 dt.train(self.classes, rd, self.log_path)
             

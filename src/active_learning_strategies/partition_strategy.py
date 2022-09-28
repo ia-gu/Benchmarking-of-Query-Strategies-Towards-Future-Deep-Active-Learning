@@ -22,13 +22,10 @@ class PartitionStrategy(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-        - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-        - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
-        - **num_partitions**: Number of partitons to use (int, optional)
         - **wrapped_strategy_class**: The class of the strategy to use (class, optional)
     query_dataset: torch.utils.data.Dataset
         The query dataset to use if the wrapped_strategy_class argument points to SMI or SCMI.
@@ -36,19 +33,13 @@ class PartitionStrategy(Strategy):
         The private dataset to use if the wrapped_strategy_class argument points to SCG or SCMI.
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}, query_dataset=None, private_dataset=None): #
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None, query_dataset=None, private_dataset=None): #
+        super(PartitionStrategy, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
         
-        super(PartitionStrategy, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)
-        
-        if "num_partitions" not in args:
-            self.num_partitions = 1
-        else:
-            self.num_partitions = args["num_partitions"]
-            
-        if "wrapped_strategy_class" not in args:
-            raise ValueError("args dictionary requires 'wrapped_strategy_class' key")
-            
-        self.wrapped_strategy_class = args["wrapped_strategy_class"]
+        self.num_partitions = 1
+        if "wrapped_strategy_class" not in cfg:
+            raise ValueError("cfg needs 'wrapped_strategy_class' key")
+        self.wrapped_strategy_class = cfg.wrapped_strategy_class
         self.query_dataset = query_dataset
         self.private_dataset = private_dataset
 
@@ -103,13 +94,13 @@ class PartitionStrategy(Strategy):
                 
             # With the new subset, create an instance of the wrapped strategy and call its select function.
             if(self.query_dataset != None and self.private_dataset != None):
-                wrapped_strategy = self.wrapped_strategy_class(self.labeled_dataset, current_partition, self.query_dataset, self.private_dataset, self.model, self.target_classes, self.args)
+                wrapped_strategy = self.wrapped_strategy_class(self.labeled_dataset, current_partition, self.query_dataset, self.private_dataset, self.model, self.target_classes, self.cfg)
             elif(self.query_dataset != None):
-                wrapped_strategy = self.wrapped_strategy_class(self.labeled_dataset, current_partition, self.query_dataset, self.model, self.target_classes, self.args)
+                wrapped_strategy = self.wrapped_strategy_class(self.labeled_dataset, current_partition, self.query_dataset, self.model, self.target_classes, self.cfg)
             elif(self.private_dataset != None):
-                wrapped_strategy = self.wrapped_strategy_class(self.labeled_dataset, current_partition, self.private_dataset, self.model, self.target_classes, self.args)
+                wrapped_strategy = self.wrapped_strategy_class(self.labeled_dataset, current_partition, self.private_dataset, self.model, self.target_classes, self.cfg)
             else:
-                wrapped_strategy = self.wrapped_strategy_class(self.labeled_dataset, current_partition, self.model, self.target_classes, self.args)
+                wrapped_strategy = self.wrapped_strategy_class(self.labeled_dataset, current_partition, self.model, self.target_classes, self.cfg)
             selected_partition_idxs = wrapped_strategy.select(partition_budget)
             
             # Use the partition_index_list to map the selected indices w/ respect to the current partition to the indices w/ respect to the dataset

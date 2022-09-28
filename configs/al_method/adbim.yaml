@@ -1,3 +1,6 @@
 strategy: adversarial_bim
 batch_size: 20
 lr: 0.01
+eps: 0.05
+verbose: false
+stop_iterations_by_count: 1000

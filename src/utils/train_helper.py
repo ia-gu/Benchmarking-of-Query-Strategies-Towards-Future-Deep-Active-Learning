@@ -41,19 +41,19 @@ class data_train:
         The training dataset to use
     net: torch.nn.Module
         The model to train
-    args: dict
+    cfg: DictConfig
         Additional arguments to control the training loop
-    dataset_args: dict
+    dataset_cfg: DictConfig
         use for ssl section
     """
     
     
-    def __init__(self, training_dataset, net, args, dataset_args):
+    def __init__(self, training_dataset, net, cfg, dataset_cfg):
 
         self.training_dataset = AddIndexDataset(training_dataset)
         self.net = net
-        self.args = args
-        self.dataset_args = dataset_args
+        self.cfg = cfg
+        self.dataset_cfg = dataset_cfg
         
         self.n_pool = len(training_dataset)
         
@@ -89,12 +89,7 @@ class data_train:
         if test_dataset is None:
             raise ValueError("Test data not present")
         
-        if 'batch_size' in self.args:
-            batch_size = self.args['batch_size']
-        else:
-            batch_size = 1 
-        
-        loader_te = DataLoader(test_dataset, shuffle=False, pin_memory=True, batch_size=batch_size, num_workers=8)
+        loader_te = DataLoader(test_dataset, shuffle=False, pin_memory=True, batch_size=self.cfg.batch_size, num_workers=8)
         self.clf.eval()
 
         class_correct = [0.]*len(classes)
@@ -166,11 +161,11 @@ class data_train:
         def weight_reset(m):
             if hasattr(m, 'reset_parameters'):
                 m.reset_parameters()
-        n_epoch = self.args['n_epoch']
+        n_epoch = self.cfg.n_epoch
 
-        if self.args['isreset']:
-            if self.args['ssl']:
-                checkpoint = torch.load('./weights/'+self.dataset_args['name']+'/'+str(self.args['seed'])+'/checkpoint.pth.tar', map_location="cpu")
+        if self.cfg.isreset:
+            if self.cfg.ssl:
+                checkpoint = torch.load('./weights/'+self.dataset_cfg.name+'/'+str(self.cfg.seed)+'/checkpoint.pth.tar', map_location="cpu")
                 state_dict = checkpoint['state_dict']
                 for k in list(state_dict.keys()):
                     # retain only encoder up to before the embedding layer
@@ -191,17 +186,13 @@ class data_train:
         self.clf = self.net.to(device=self.device)
 
         # batch size for each gpu
-        if 'batch_size' in self.args:
-            batch_size = self.args['batch_size']
-        else:
-            batch_size = 1
-        batch_size = batch_size * len(device_ids)
+        self.cfg.batch_size *= len(device_ids)
 
-        optimizer = optim.SGD(self.clf.parameters(), lr = self.args['lr'], momentum=0.9, weight_decay=5e-4)
+        optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
         lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epoch)
 
         # Set shuffle to true to encourage stochastic behavior for SGD
-        loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=8)
+        loader_tr = DataLoader(self.training_dataset, batch_size=self.cfg.batch_size, shuffle=True, pin_memory=True, num_workers=8)
         epoch = 1
         
         # Make histgram of queried data
@@ -247,11 +238,11 @@ class data_train:
         def weight_reset(m):
             if hasattr(m, 'reset_parameters'):
                 m.reset_parameters()
-        n_epoch = self.args['n_epoch']
+        n_epoch = self.cfg.n_epoch
 
-        if self.args['isreset']:
-            if self.args['ssl']:
-                checkpoint = torch.load('./weights/'+self.dataset_args['name']+'/'+str(self.args['seed'])+'/checkpoint.pth.tar', map_location="cpu")
+        if self.cfg.isreset:
+            if self.cfg.ssl:
+                checkpoint = torch.load('./weights/'+self.dataset_cfg.name+'/'+str(self.cfg.seed)+'/checkpoint.pth.tar', map_location="cpu")
                 state_dict = checkpoint['state_dict']
                 for k in list(state_dict.keys()):
                     # retain only encoder up to before the embedding layer
@@ -272,16 +263,12 @@ class data_train:
         sampler = DistributedSampler(self.training_dataset, num_replicas=torch.cuda.device_count(), rank=rank, shuffle=True)
 
         # batch size for each gpu
-        if 'batch_size' in self.args:
-            batch_size = self.args['batch_size']
-        else:
-            batch_size = 1
-        batch_size *= torch.cuda.device_count()
+        self.cfg.batch_size *= torch.cuda.device_count()
 
         # Set shuffle to true to encourage stochastic behavior for SGD
-        loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, pin_memory=True, num_workers=8, sampler=sampler)
+        loader_tr = DataLoader(self.training_dataset, batch_size=self.cfg.batch_size, pin_memory=True, num_workers=8, sampler=sampler)
         
-        optimizer = optim.SGD(self.clf.parameters(), lr = self.args['lr'], momentum=0.9, weight_decay=5e-4)
+        optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
         lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(loader_tr)*n_epoch/torch.cuda.device_count())
         
         # histgram of queried data

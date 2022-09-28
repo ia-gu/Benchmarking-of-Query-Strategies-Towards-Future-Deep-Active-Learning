@@ -40,4 +40,3 @@ else:
         save_path = os.path.join('downloaded_data/BrainTumor', str(int(cross_validation_index[0][i-1])), classes[label])
         pl_img = Image.fromarray(nd_image).convert('L')
         pl_img.save(os.path.join(save_path, str(num_each_class[label][int(cross_validation_index[0][i-1])-1])+'.png'))
-        print(i, ':', save_path)

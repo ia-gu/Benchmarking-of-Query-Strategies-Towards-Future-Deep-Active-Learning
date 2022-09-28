@@ -192,7 +192,6 @@ def main_worker(device, gpu_ids, cfg):
 
     for epoch in range(cfg.train_parameters.start_epoch, cfg.train_parameters.n_epoch):
         adjust_learning_rate(optimizer, init_lr, epoch, cfg)
-        print(optimizer)
 
         # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch, device)

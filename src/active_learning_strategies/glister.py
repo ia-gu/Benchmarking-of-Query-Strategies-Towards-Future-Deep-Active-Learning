@@ -41,12 +41,10 @@ class GLISTER(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-        - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-        - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
         - **lr**: The learning rate used for training (float)
     validation_dataset: torch.utils.data.Dataset
         The validation dataset to be used in GLISTER objective
@@ -66,10 +64,9 @@ class GLISTER(Strategy):
         tensorization while honouring the resourse constraits. 
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}, validation_dataset = None,
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None, validation_dataset = None,
                  typeOf = 'none', lam = None, kernel_batch_size = 200):
-        
-        super(GLISTER, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)
+        super(GLISTER, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
     
         self.validation_dataset = validation_dataset
         self.typeOf = typeOf
@@ -129,7 +126,7 @@ class GLISTER(Strategy):
         
         if first_init:
             if self.validation_dataset is not None:
-                loader = DataLoader(self.validation_dataset,shuffle=False,batch_size=self.args['batch_size'], num_workers=8, pin_memory=True)
+                loader = DataLoader(self.validation_dataset,shuffle=False,batch_size=self.cfg.batch_size, num_workers=8, pin_memory=True)
                 self.out = torch.zeros(len(self.validation_dataset), self.target_classes).to(self.device)
                 self.emb = torch.zeros(len(self.validation_dataset), embDim).to(self.device)
             else:
@@ -154,7 +151,7 @@ class GLISTER(Strategy):
                 
                 self.new_dataset = ConcatDataset([pseudolabeled_dataset, self.labeled_dataset])
 
-                loader = DataLoader(self.new_dataset, shuffle=False, batch_size=self.args['batch_size'], num_workers=8, pin_memory=True)
+                loader = DataLoader(self.new_dataset, shuffle=False, batch_size=self.cfg.batch_size, num_workers=8, pin_memory=True)
                 self.out = torch.zeros(len(self.new_dataset), self.target_classes).to(self.device)
                 self.emb = torch.zeros(len(self.new_dataset), embDim).to(self.device)
 
@@ -172,7 +169,7 @@ class GLISTER(Strategy):
                     self.emb[idxs] = init_l1 
                     for j in range(self.target_classes):
                         try:
-                            self.out[idxs, j] = init_out[:, j] - (1 * self.args['lr'] * (torch.matmul(init_l1, self.prev_grads_sum[0][(j * embDim) +
+                            self.out[idxs, j] = init_out[:, j] - (1 * self.cfg.lr * (torch.matmul(init_l1, self.prev_grads_sum[0][(j * embDim) +
                                     self.target_classes:((j + 1) * embDim) + self.target_classes].view(-1, 1)) + self.prev_grads_sum[0][j])).view(-1)
                         except KeyError:
                             raise ValueError("Please pass learning rate used during the training")
@@ -202,7 +199,7 @@ class GLISTER(Strategy):
 
                 for j in range(self.target_classes):
                     try:
-                        self.out[:, j] = self.out[:, j] - (1 * self.args['lr'] * (torch.matmul(self.emb, grads_currX[0][(j * embDim) +
+                        self.out[:, j] = self.out[:, j] - (1 * self.cfg.lr * (torch.matmul(self.emb, grads_currX[0][(j * embDim) +
                                     self.target_classes:((j + 1) * embDim) + self.target_classes].view(-1, 1)) +  grads_currX[0][j])).view(-1)
                     except KeyError:
                         print("Please pass learning rate used during the training")

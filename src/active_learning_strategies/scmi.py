@@ -50,12 +50,10 @@ class SCMI(Strategy):
         or on true gradients (depending on the availability of the label).
     nclasses: int
         The number of classes being predicted by the neural network.
-    args: dict
+    cfg: DictConfig
         A dictionary containing many configurable settings for this strategy. Each key-value pair is described below:
             
             - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-            - **device**: The device to be used for computation. PyTorch constructs are transferred to this device. Usually is one of 'cuda' or 'cpu'. (string, optional)
-            - **loss**: The loss function to be used in computations. (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional)
             - **scmi_function**: The submodular conditional mutual information function to use in optimization. Must be one of 'flcmi' or 'logdetcmi'.  (string)
             - **optimizer**: The optimizer to use for submodular maximization. Can be one of 'NaiveGreedy', 'StochasticGreedy', 'LazyGreedy' and 'LazierThanLazyGreedy'. (string, optional)
             - **metric**: The similarity metric to use for similarity kernel computation. This can be either 'cosine' or 'euclidean'. (string)
@@ -69,9 +67,9 @@ class SCMI(Strategy):
             - **verbose**: Gives a more verbose output when calling select() when True. (bool)
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, query_dataset, private_dataset, net, nclasses, args={}): #
+    def __init__(self, labeled_dataset, unlabeled_dataset, query_dataset, private_dataset, net, nclasses, cfg=None):
+        super(SCMI, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
         
-        super(SCMI, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)        
         self.query_dataset = query_dataset
         self.private_dataset = private_dataset
 
@@ -92,18 +90,18 @@ class SCMI(Strategy):
 
         self.model.eval()
 
-        #Get hyperparameters from args dict
-        optimizer = self.args['optimizer'] if 'optimizer' in self.args else 'NaiveGreedy'
-        metric = self.args['metric'] if 'metric' in self.args else 'cosine'
-        eta = self.args['eta'] if 'eta' in self.args else 1
-        nu = self.args['nu'] if 'nu' in self.args else 1
-        gradType = self.args['gradType'] if 'gradType' in self.args else "bias_fc"
-        stopIfZeroGain = self.args['stopIfZeroGain'] if 'stopIfZeroGain' in self.args else False
-        stopIfNegativeGain = self.args['stopIfNegativeGain'] if 'stopIfNegativeGain' in self.args else False
-        verbose = self.args['verbose'] if 'verbose' in self.args else False
-        embedding_type = self.args['embedding_type'] if 'embedding_type' in self.args else "gradients"
+        #Get hyperparameters from cfg
+        optimizer = self.cfg.optimizer if 'optimizer' in self.cfg else 'NaiveGreedy'
+        metric = self.cfg.metric if 'metric' in self.cfg else 'cosine'
+        eta = self.cfg.eta if 'eta' in self.cfg else 1
+        nu = self.cfg.nu if 'nu' in self.cfg else 1
+        gradType = self.cfg.gradType if 'gradType' in self.cfg else "bias_fc"
+        stopIfZeroGain = self.cfg.stopIfZeroGain if 'stopIfZeroGain' in self.cfg else False
+        stopIfNegativeGain = self.cfg.stopIfNegativeGain if 'stopIfNegativeGain' in self.cfg else False
+        verbose = self.cfg.verbose if 'verbose' in self.cfg else False
+        embedding_type = self.cfg.embedding_type if 'embedding_type' in self.cfg else "gradients"
         if(embedding_type=="features"):
-            layer_name = self.args['layer_name'] if 'layer_name' in self.args else "avgpool"
+            layer_name = self.cfg.layer_name if 'layer_name' in self.cfg else "avgpool"
 
         #Compute Embeddings
         if(embedding_type == "gradients"):
@@ -120,7 +118,7 @@ class SCMI(Strategy):
         #Compute image-image kernel
         data_sijs = submodlib.helper.create_kernel(X=unlabeled_data_embedding.cpu().numpy(), metric=metric, method="sklearn")
         #Compute query-query kernel
-        if(self.args['scmi_function']=='logdetcmi'):
+        if(self.cfg.scmi_function=='logdetcmi'):
             query_query_sijs = submodlib.helper.create_kernel(X=query_embedding.cpu().numpy(), metric=metric, method="sklearn")
             private_private_sijs = submodlib.helper.create_kernel(X=private_embedding.cpu().numpy(), metric=metric, method="sklearn")
             query_private_sijs = submodlib.helper.create_kernel(X=private_embedding.cpu().numpy(), X_rep=query_embedding.cpu().numpy(), metric=metric, method="sklearn")
@@ -128,7 +126,7 @@ class SCMI(Strategy):
         query_sijs = submodlib.helper.create_kernel(X=query_embedding.cpu().numpy(), X_rep=unlabeled_data_embedding.cpu().numpy(), metric=metric, method="sklearn")
         private_sijs = submodlib.helper.create_kernel(X=private_embedding.cpu().numpy(), X_rep=unlabeled_data_embedding.cpu().numpy(), metric=metric, method="sklearn")
         
-        if(self.args['scmi_function']=='flcmi'):
+        if(self.cfg.scmi_function=='flcmi'):
             obj = submodlib.FacilityLocationConditionalMutualInformationFunction(n=unlabeled_data_embedding.shape[0],
                                                                       num_queries=query_embedding.shape[0],
                                                                       num_privates=private_embedding.shape[0], 
@@ -138,8 +136,8 @@ class SCMI(Strategy):
                                                                       magnificationEta=eta,
                                                                       privacyHardness=nu)
     
-        if(self.args['scmi_function']=='logdetcmi'):
-            lambdaVal = self.args['lambdaVal'] if 'lambdaVal' in self.args else 1
+        if(self.cfg.scmi_function=='logdetcmi'):
+            lambdaVal = self.cfg.lambdaVal if 'lambdaVal' in self.cfg else 1
             obj = submodlib.LogDeterminantConditionalMutualInformationFunction(n=unlabeled_data_embedding.shape[0],
                                                                       num_queries=query_embedding.shape[0],
                                                                       num_privates=private_embedding.shape[0], 

@@ -23,20 +23,25 @@ class ClusterMarginSampling(Strategy):
         The deep model to use
     nclasses: int
         Number of unique values for the target
-    args: dict
+    cfg: DictConfig
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
     """
 
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, args={}):
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None):
+        super(ClusterMarginSampling, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
+        
         self.first = True
         self.features = None
-        self.cluster_size = [0]*int((len(labeled_dataset)+len(unlabeled_dataset))/1.25)
         self.stream_buffer_size = len(unlabeled_dataset)
-        super(ClusterMarginSampling, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, args)
+        self.metric = self.cfg.metric
+        if self.cfg.cluster_size=='origin':
+            self.cluster_size = [0]*int((len(labeled_dataset)+len(unlabeled_dataset))/1.25)
+        else:
+            self.cluster_size = self.cfg.cluster_size
 
-    def select(self, budget: int):
+    def select(self, budget):
         self.model.eval()
 
         # HAC clustering only once
@@ -44,7 +49,7 @@ class ClusterMarginSampling(Strategy):
             self.first = False
             self.features = self.get_embedding(self.unlabeled_dataset)
             self.features = self.features.to('cpu').detach().numpy().copy()
-            self.clustered_features = AgglomerativeClustering(n_clusters=int(len(self.unlabeled_dataset)/1.25), affinity='cosine', linkage='average').fit(self.features)
+            self.clustered_features = AgglomerativeClustering(n_clusters=int(len(self.unlabeled_dataset)/1.25), affinity=self.metric, linkage='average').fit(self.features)
 
         # Calculate size of each cluster
         for i in self.clustered_features.labels_:
