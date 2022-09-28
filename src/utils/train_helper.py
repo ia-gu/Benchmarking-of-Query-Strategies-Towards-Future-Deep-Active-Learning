@@ -1,16 +1,19 @@
-from torch.utils.data import DataLoader, Dataset
-from torch.utils.data.distributed import DistributedSampler
-from torch import nn
-import torch
-import torch.optim as optim
-import torch.distributed as dist
-from tqdm import tqdm
-
 import os
 import matplotlib.pyplot as plt
 import sys
 import logging
 import mlflow
+
+import torch
+from torch import nn
+import torch.optim as optim
+import torch.distributed as dist
+from torch.utils.data import DataLoader, Dataset
+from torch.utils.data.distributed import DistributedSampler
+from tqdm import tqdm
+
+
+
 
 sys.path.append('./')  
 

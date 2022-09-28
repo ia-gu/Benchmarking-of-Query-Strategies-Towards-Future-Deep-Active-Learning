@@ -12,23 +12,23 @@ Some of the algorithms currently implemented here include the following:
     - [Entropy Sampling](https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf)
     - [Margin Sampling](http://ufldl.stanford.edu/housenumbers/nips2011_housenumbers.pdf)
     - [Least Confidence Sampling](https://ieeexplore.ieee.org/document/6889457)
-    - [BALD](https://arxiv.org/pdf/1703.02910.pdf)
-    - [Batch-BALD](https://arxiv.org/pdf/1906.08158.pdf)
+    - [BALD](https://arxiv.org/abs/1703.02910)
+    - [Batch-BALD](https://arxiv.org/abs/1906.08158)
 - Diversity Based Sampling
     - Kmeans Sampling
-    - [Coreset](https://openreview.net/pdf?id=H1aIuk-RW)
-    - [Adversarial BIM](https://arxiv.org/pdf/1904.00370.pdf)
-    - [Adversarial DeepFool](https://arxiv.org/pdf/1904.00370.pdf)
+    - [Coreset](https://arxiv.org/abs/1708.00489)
+    - [Adversarial BIM](https://arxiv.org/abs/1904.00370)
+    - [Adversarial DeepFool](https://arxiv.org/abs/1904.00370)
 - Hybrid, other Approaches
-    - [BADGE](https://arxiv.org/pdf/1906.03671.pdf)
-    - [FASS](http://proceedings.mlr.press/v37/wei15.pdf)
-    - [SIMILAR](https://arxiv.org/pdf/2107.00717.pdf)
-    - [GLISTER](https://arxiv.org/pdf/2012.10630.pdf)
-    - [Cluster Margin Sampling](https://arxiv.org/pdf/2107.14263.pdf)
+    - [BADGE](https://arxiv.org/abs/1906.03671)
+    - [FASS](https://openreview.net/forum?id=ByZf6qZuZS)
+    - [SIMILAR](https://arxiv.org/abs/2107.00717)
+    - [GLISTER](https://arxiv.org/abs/2012.10630)
+    - [Cluster Margin Sampling](https://arxiv.org/abs/2107.14263)
 
 If you want to know the detail of each implementations, refer original paper or [ours]().
 
-SSL implemented here is [SimSiam](https://github.com/facebookresearch/simsiam). This is based on the idea from [here](https://arxiv.org/pdf/2108.11458.pdf)
+SSL implemented here is [SimSiam](https://github.com/facebookresearch/simsiam). This is based on the idea from [here](https://arxiv.org/abs/2011.10566)
 
 You can get compared dataset from below: 
 
@@ -78,6 +78,6 @@ Implement below for SSL
 ```get_brain_data.py``` and ```get_gaps.py``` is made because we need image data when we implement SimSiam.
 
 We prepare two types of ResNet18. One is the original model given by distil, other is from [here](https://github.com/kuangliu/pytorch-cifar).
-This model is for CIFAR dataset because the size of CIFAR images is 32*32, 7*7 carnel of original model is too big.
+This model is for CIFAR dataset because the size of CIFAR images is *32×32*, *7×7* carnel of original model is too big.
 
 In our paper, we did not implement ImageNet experiments, due to time consuming. However, there are few repository which can implement ImageNet×AL experiments, so we prepare it. If you choose ImageNet for dataset and use multi-GPU, the repository automatically implement DDP experiments.

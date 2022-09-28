@@ -2,12 +2,14 @@ from gaps_dataset import gaps
 import os
 import numpy as np
 from PIL import Image
+
 '''
 You need to access below 
 https://www.tu-ilmenau.de/universitaet/fakultaeten/fakultaet-informatik-und-automatisierung/profil/institute-und-fachgebiete/institut-fuer-technische-informatik-und-ingenieurinformatik/fachgebiet-neuroinformatik-und-kognitive-robotik/data-sets-code/german-asphalt-pavement-distress-dataset-gaps
 to get a license.
 Then, way how to utilize GAPs dataset is shared by official library, so please refer it.
 '''
+
 # download data
 if os.path.exists('downloaded_data/GAPs/v2/ZEB_50k_64'):
     print('GAPs data may already downloaded')

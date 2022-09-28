@@ -1,8 +1,15 @@
+import os
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import time
 import mlflow
+import hydra
+import logging
+import csv
 import gc
+from omegaconf import DictConfig
 
 sys.path.append('./')
 import torch
@@ -10,6 +17,7 @@ from torch import utils
 import torch.multiprocessing as mp
 from torch.utils.data import Subset, ConcatDataset
 from torchvision import datasets, transforms
+
 from src.utils.models.resnet import ResNet18
 from src.utils.models.resnet import ResNet
 from src.active_learning_strategies import GLISTER, BADGE, EntropySampling, RandomSampling, LeastConfidenceSampling, \
@@ -17,13 +25,6 @@ from src.active_learning_strategies import GLISTER, BADGE, EntropySampling, Rand
                                         BALDDropout, FASS, BatchBALDDropout, SubmodularSampling, ClusterMarginSampling
 from src.utils.train_helper import data_train
 from src.utils.utils import LabeledToUnlabeledDataset
-import time
-import os
-import random
-import csv
-import logging
-import hydra
-from omegaconf import DictConfig
 
 class TrainClassifier:
 	
