@@ -5,14 +5,12 @@ import logging
 import mlflow
 
 import torch
-from torch import nn
+import torch.nn as nn
 import torch.optim as optim
 import torch.distributed as dist
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-
-
 
 
 sys.path.append('./')  
