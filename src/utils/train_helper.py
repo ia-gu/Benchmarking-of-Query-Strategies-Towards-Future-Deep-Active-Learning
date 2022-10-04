@@ -204,7 +204,8 @@ class data_train:
         plt.xlabel('classes')
         plt.ylabel('number of queried data')
         fig.savefig(os.path.join(log_path, 'hist', str(rd)+'.png'))
-
+        plt.close()
+        
         for epoch in range(n_epoch):
 
             accCurrent, lossCurrent = self._train(loader_tr, optimizer)
