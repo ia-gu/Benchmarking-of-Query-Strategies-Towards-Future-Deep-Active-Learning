@@ -82,6 +82,7 @@ class data_train:
         class_total: list
             The list of total numbers of each class
         """	
+        
         self.clf = clf
 
         if test_dataset is None:

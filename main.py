@@ -62,15 +62,12 @@ class TrainClassifier:
         elif data_cfg.name == 'EuroSAT':
             self.channels = 3
             self.classes = ('AnnualCrop', 'Forest', 'Herbaceous', 'Highway', 'Industrial', 'Pasture', 'PermanentCrop', 'Residential', 'River', 'SeaLake')
-            data_path = '/data/dataset/eurosat/2750'
+            train_data_path = '/data/dataset/eurosat/train'
+            test_data_path = '/data/dataset/eurosat/test'
             train_transform = transforms.Compose([transforms.RandomVerticalFlip(), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
             test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            data = datasets.ImageFolder(root=data_path)
-            train_size = 22000
-            test_size = len(data) - train_size
-            train_dataset, test_dataset = utils.data.random_split(data, [train_size, test_size])
-            train_dataset.dataset.transform = train_transform
-            test_dataset.dataset.transform = test_transform
+            train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
+            test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
 
         elif data_cfg.name == 'BrainTumor':
             self.classes = ('Glioma', 'Meningioma', 'Pituitary')
