@@ -185,13 +185,14 @@ class data_train:
         self.clf = self.net.to(device=self.device)
 
         # batch size for each gpu
-        self.cfg.batch_size *= len(device_ids)
+        batch_size = self.cfg.batch_size
+        batch_size *= len(device_ids)
 
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
         lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epoch)
 
         # Set shuffle to true to encourage stochastic behavior for SGD
-        loader_tr = DataLoader(self.training_dataset, batch_size=self.cfg.batch_size, shuffle=True, pin_memory=True, num_workers=8)
+        loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=8)
         epoch = 1
         
         # Make histgram of queried data
@@ -263,10 +264,11 @@ class data_train:
         sampler = DistributedSampler(self.training_dataset, num_replicas=torch.cuda.device_count(), rank=rank, shuffle=True)
 
         # batch size for each gpu
-        self.cfg.batch_size *= torch.cuda.device_count()
+        batch_size = self.cfg.batch_size
+        batch_size *= torch.cuda.device_count()
 
         # Set shuffle to true to encourage stochastic behavior for SGD
-        loader_tr = DataLoader(self.training_dataset, batch_size=self.cfg.batch_size, pin_memory=True, num_workers=8, sampler=sampler)
+        loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, pin_memory=True, num_workers=8, sampler=sampler)
         
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
         lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(loader_tr)*n_epoch/torch.cuda.device_count())
