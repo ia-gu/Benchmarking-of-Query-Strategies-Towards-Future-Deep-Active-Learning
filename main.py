@@ -19,7 +19,7 @@ from torch.utils.data import Subset, ConcatDataset
 from torchvision import datasets, transforms
 
 from src.utils.models.resnet import ResNet18
-from src.utils.models.resnet import ResNet
+from src.utils.models.resnet import Original_ResNet
 from src.active_learning_strategies import GLISTER, BADGE, EntropySampling, RandomSampling, LeastConfidenceSampling, \
                                         MarginSampling, CoreSet, AdversarialBIM, AdversarialDeepFool, KMeansSampling, \
                                         BALDDropout, FASS, BatchBALDDropout, SubmodularSampling, ClusterMarginSampling
@@ -37,7 +37,7 @@ class TrainClassifier:
     def getModel(self,):
 
         if self.model_name == 'resnet':
-            net = ResNet(num_classes = self.num_classes, channels = self.channels)
+            net = Original_ResNet(num_classes = self.num_classes, channels = self.channels)
 
         else:
             # ResNet18 for CIFAR10

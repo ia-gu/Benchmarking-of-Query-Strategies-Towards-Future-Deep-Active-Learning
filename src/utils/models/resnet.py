@@ -135,9 +135,9 @@ def ResNet101(num_classes=10, channels=3):
 def ResNet152(num_classes=10, channels=3):
     return ModifiedResNet(Bottleneck, [3,8,36,3], num_classes, channels)
 
-class ResNet(nn.Module):
+class Original_ResNet(nn.Module):
     def __init__(self, num_classes=1000, channels=3):
-        super(ResNet, self).__init__()
+        super(Original_ResNet, self).__init__()
         self.net = models.resnet18(pretrained=False)
         self.fc = nn.Linear(512, num_classes)
 

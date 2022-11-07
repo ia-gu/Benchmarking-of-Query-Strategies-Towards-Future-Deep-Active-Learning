@@ -101,7 +101,7 @@ class data_train:
                 x, y = x.to(device=self.device), y.to(device=self.device)
                 outputs = self.clf(x)
                 _, predicted = torch.max(outputs, 1)
-                c = (predicted == y).squeeze()
+                c = (predicted == y)
                 # Get acc of each class (for imbalanced data analysis)
                 for i in range(len(y)):
                     label = y[i]

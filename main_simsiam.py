@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates.
-# All rights reserved.
-
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
 import os
 import random
 import math
@@ -24,10 +17,9 @@ from torch.utils.data import ConcatDataset
 
 import simsiam.simsiam.loader as loader
 import simsiam.simsiam.builder as builder
-from src.utils.models.resnet import ResNet
+from src.utils.models.resnet import Original_ResNet
 from src.utils.models.resnet import ResNet18
 
-# dataset
 def prepare_train_dataset(cfg):
     if cfg.dataset.name == 'CIFAR10':
         augmentation = [
@@ -54,7 +46,7 @@ def prepare_train_dataset(cfg):
             transforms.ToTensor(),
             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ]
-        traindir = '/data/dataset/eurosat/2750'
+        traindir = '/data/dataset/eurosat/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             loader.TwoCropsTransform(transforms.Compose(augmentation)))
@@ -137,14 +129,13 @@ def main(cfg : DictConfig):
             random.seed(random_seed)
             torch.manual_seed(random_seed)
             torch.cuda.manual_seed(random_seed)
-            torch.backends.cudnn.benchmark = False
             torch.backends.cudnn.deterministic = True
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             gpu_ids=[]
             for i in range(torch.cuda.device_count()):
                 gpu_ids.append(i)
             
-            print(f'use gpu: {gpu_ids}')
+            print(f'use {gpu_ids} gpu')
 
             # fit batch_size
             cfg.train_parameters.batch_size = int(cfg.train_parameters.batch_size/8*len(gpu_ids))
@@ -161,7 +152,7 @@ def main_worker(device, gpu_ids, cfg):
             cfg.train_parameters.dim, cfg.train_parameters.pred_dim)
     else:
         model = builder.SimSiam(
-            ResNet,
+            Original_ResNet,
             cfg.train_parameters.dim, cfg.train_parameters.pred_dim)
     if cfg.train_parameters.start_epoch > 0:
         model.load_state_dict(torch.load('weights/'+cfg.dataset.name+'/'+str(cfg.train_parameters.seed)+'/checkpoint.pth.tar')['state_dict'])
