@@ -193,12 +193,14 @@ class TrainClassifier:
         strategy.update_model(clf)
         acc = np.zeros(n_rounds)
         acc[0], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
-        for i in range(self.num_classes):
-            mlflow.log_metric(self.classes[i], (class_correct[i]/class_total[i]), step=len(train_dataset))
         mlflow.log_metric('final_acc', acc[0], step=len(train_dataset))
         logging.info(f'training points: {len(train_dataset)}')
         logging.info(f'test accuracy: {round(acc[0]*100, 2)}')
         logging.info(f'trainning time: {time.time()-t}')
+        for i in range(self.num_classes):
+            mlflow.log_metric(self.classes[i], (class_correct[i]/class_total[i]), step=len(train_dataset))
+            logging.info(f'class{self.classes[i]} accuracy: {100*class_correct[i]/class_total[i]}')
+
 
         print('***************************')
         print('Starting Training..')
@@ -225,18 +227,19 @@ class TrainClassifier:
             else:
                 dt.train(self.classes, rd, self.log_path)
             
-            t2 = time.time()            
+            t2 = time.time()
             clf = self.getModel()
             clf.load_state_dict(torch.load(self.log_path+'/weight.pth', map_location="cpu"), strict=False)
             strategy.update_model(clf)
             acc[rd], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
             mlflow.log_metric('final_acc', acc[rd], step=len(train_dataset))
-            for i in range(self.num_classes):
-                mlflow.log_metric(self.classes[i], 100*class_correct[i]/class_total[i], step=len(train_dataset))
             logging.info(f'training points: {len(train_dataset)}')
             logging.info(f'test accuracy: {round(acc[rd]*100, 2)}')
             logging.info(f'selection time: {t1-t0}')
             logging.info(f'training time: {t2-t1}')
+            for i in range(self.num_classes):
+                mlflow.log_metric(self.classes[i], 100*class_correct[i]/class_total[i], step=len(train_dataset))
+                logging.info(f'class{self.classes[i]} accuracy: {100*class_correct[i]/class_total[i]}')
 
         print('Training Completed!')
 
