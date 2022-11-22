@@ -11,16 +11,16 @@ Then, way how to utilize GAPs dataset is shared by official library, so please r
 '''
 
 # download data
-# if os.path.exists('downloaded_data/GAPs/v2/ZEB_50k_64'):
-#     print('GAPs data may already downloaded')
-#     pass
-# else:
-#     os.makedirs('downloaded_data/GAPs', exist_ok=True)
-#     gaps.download(login='gapsro2s;i2A*7',
-#                 output_dir='downloaded_data/GAPs', 
-#                 version=2,
-#                 patchsize=224, 
-#                 issue='ZEB_50k')
+if os.path.exists('downloaded_data/GAPs/v2/ZEB_50k_64'):
+    print('GAPs data may already downloaded')
+    pass
+else:
+    os.makedirs('downloaded_data/GAPs', exist_ok=True)
+    gaps.download(login='gapsro2s;i2A*7',
+                output_dir='downloaded_data/GAPs', 
+                version=2,
+                patchsize=224, 
+                issue='ZEB_50k')
 
 
 # prepare png data
@@ -42,37 +42,37 @@ else:
     pdb.set_trace()
 
     # dtype of original images is not uint8, for PIL library, change them to uint8 images
-    # for i in range(len(x_train)):
-    #     nd_array = x_train[i][0]
-    #     nd_array -= nd_array.min()
-    #     scale = 255. / nd_array.max()
-    #     img_array = np.uint8(np.round(nd_array*scale))
-    #     img = Image.fromarray(img_array)
+    for i in range(len(x_train)):
+        nd_array = x_train[i][0]
+        nd_array -= nd_array.min()
+        scale = 255. / nd_array.max()
+        img_array = np.uint8(np.round(nd_array*scale))
+        img = Image.fromarray(img_array)
 
-    #     cnt[int(y_train[i])] += 1
-    #     img_path = 'downloaded_data/GAPs/v2/train/' + classes[int(y_train[i])] + '/' + str(cnt[int(y_train[i])])
-    #     img.save(img_path+'.png')
+        cnt[int(y_train[i])] += 1
+        img_path = 'downloaded_data/GAPs/v2/train/' + classes[int(y_train[i])] + '/' + str(cnt[int(y_train[i])])
+        img.save(img_path+'.png')
 
-# if os.path.exists('downloaded_data/GAPs/v2/test/Potholes'):
-#     print('GAPs test_dataset may be ready')
-#     pass
-# else:
-#     cnt = [0, 0, 0, 0, 0, 0]
-#     classes = ['Intact_road', 'Applied_patches', 'Potholes', 'Inlaid_patches', 'Open_joints', 'Cracks']
-#     for i in classes:
-#         os.makedirs(os.path.join('downloaded_data/GAPs/v2/test', i), exist_ok=True)
+if os.path.exists('downloaded_data/GAPs/v2/test/Potholes'):
+    print('GAPs test_dataset may be ready')
+    pass
+else:
+    cnt = [0, 0, 0, 0, 0, 0]
+    classes = ['Intact_road', 'Applied_patches', 'Potholes', 'Inlaid_patches', 'Open_joints', 'Cracks']
+    for i in classes:
+        os.makedirs(os.path.join('downloaded_data/GAPs/v2/test', i), exist_ok=True)
 
 
-#     x_test, y_test = gaps.load_chunk(chunk_id=0, patchsize=224, issue='ZEB_50k', subset='test', datadir='downloaded_data/GAPs')
+    x_test, y_test = gaps.load_chunk(chunk_id=0, patchsize=224, issue='ZEB_50k', subset='test', datadir='downloaded_data/GAPs')
 
-#     for i in range(len(x_test)):
-#         nd_array = x_test[i][0]
-#         nd_array -= nd_array.min()
-#         scale = 255. / nd_array.max()
-#         img_array = np.uint8(np.round(nd_array*scale))
-#         img = Image.fromarray(img_array)
+    for i in range(len(x_test)):
+        nd_array = x_test[i][0]
+        nd_array -= nd_array.min()
+        scale = 255. / nd_array.max()
+        img_array = np.uint8(np.round(nd_array*scale))
+        img = Image.fromarray(img_array)
 
-#         cnt[int(y_test[i])] += 1
-#         img_path = 'downloaded_data/GAPs/v2/test/' + classes[int(y_test[i])] + '/' + str(cnt[int(y_test[i])])
-#         img.save(img_path+'.png')
-#         print(i+1)
+        cnt[int(y_test[i])] += 1
+        img_path = 'downloaded_data/GAPs/v2/test/' + classes[int(y_test[i])] + '/' + str(cnt[int(y_test[i])])
+        img.save(img_path+'.png')
+        print(i+1)
