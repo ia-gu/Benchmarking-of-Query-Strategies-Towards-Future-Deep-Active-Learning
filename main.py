@@ -13,13 +13,12 @@ from omegaconf import DictConfig
 
 sys.path.append('./')
 import torch
-from torch import utils
 import torch.multiprocessing as mp
 from torch.utils.data import Subset, ConcatDataset
 from torchvision import datasets, transforms
 
 from src.utils.models.resnet import ResNet18
-from src.utils.models.resnet import Original_ResNet
+from src.utils.models.resnet import OriginalResNet
 from src.active_learning_strategies import GLISTER, BADGE, EntropySampling, RandomSampling, LeastConfidenceSampling, \
                                         MarginSampling, CoreSet, AdversarialBIM, AdversarialDeepFool, KMeansSampling, \
                                         BALDDropout, FASS, BatchBALDDropout, SubmodularSampling, ClusterMarginSampling
@@ -37,7 +36,7 @@ class TrainClassifier:
     def getModel(self,):
 
         if self.model_name == 'resnet':
-            net = Original_ResNet(num_classes = self.num_classes, channels = self.channels)
+            net = OriginalResNet(num_classes = self.num_classes, channels = self.channels)
 
         else:
             # ResNet18 for CIFAR10
@@ -106,7 +105,7 @@ class TrainClassifier:
             train_data_path = '/imagenet_dataset/imagenet_2012/ILSVRC2012_img_train'
             test_data_path = '/imagenet_dataset/imagenet_2012/ILSVRC2012_img_val_for_ImageFolder'
             train_transform = transforms.Compose([transforms.RandomResizedCrop(224, scale=(0.2, 1.)), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-            test_transform = transforms.Compose([transforms.Resize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
+            test_transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
             train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
             test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
 
@@ -258,10 +257,6 @@ class TrainClassifier:
             writer = csv.writer(f)
             writer.writerow([self.cfg.train_parameters.seed])
             writer.writerow(acc)
-
-        for i in range(self.num_classes):
-            logging.info('Accuracy of %5s : %2d %%' % (
-                self.classes[i], 100 * class_correct[i] / class_total[i]))
 
 # hydra
 @hydra.main(config_name='base', config_path='configs', version_base='1.1')

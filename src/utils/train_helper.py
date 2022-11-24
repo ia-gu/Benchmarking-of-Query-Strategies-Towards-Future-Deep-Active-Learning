@@ -109,17 +109,13 @@ class data_train:
                     class_total[label] += 1
         accFinal = sum(class_correct) / sum(class_total)
 
-        del loader_te, loop, outputs, predicted, label
         return accFinal, class_correct, class_total
 
 
-    def _train(self, loader_tr, optimizer):
-        self.clf.train()
+    def _train(self, epoch, loader_tr, optimizer, criterion, scaler):
         accFinal = 0.
         lossFinal = 0.
-        criterion = nn.CrossEntropyLoss()
         
-        scaler = torch.cuda.amp.GradScaler()
         loop = tqdm(loader_tr, unit='batch', desc='| Training |', dynamic_ncols=True)
         for _, (x, y, _) in enumerate(loop):
             x, y = x.to(device=self.device), y.to(device=self.device)
@@ -134,11 +130,9 @@ class data_train:
             scaler.update()
             lossFinal += loss.item()
 
-        mlflow.log_metric('acc', accFinal/len(loader_tr.dataset))
-        mlflow.log_metric('loss', lossFinal/len(loader_tr.dataset))
-
-        del criterion, scaler, loop
-        return accFinal / len(loader_tr.dataset), lossFinal / len(loader_tr.dataset)
+        self.acc.append(accFinal/len(loader_tr.dataset))
+        self.loss.append(lossFinal/len(loader_tr.dataset))
+        print('Epoch:' + str(epoch) + '- training accuracy:'+str(self.acc[-1])+'- training loss:'+str(self.loss[-1]))
 
 
     def train(self, classes, rd, log_path):
@@ -155,6 +149,9 @@ class data_train:
         log_path: str
             path for log file
         """        
+
+        self.acc = []
+        self.loss = []
 
         print('Training..')
         def weight_reset(m):
@@ -173,7 +170,6 @@ class data_train:
                         state_dict[k[len("encoder."):]] = state_dict[k]
                     # delete renamed or unused k
                 self.net.load_state_dict(state_dict, strict=False)
-                del state_dict
             else:
                 self.clf = self.net.apply(weight_reset)
         
@@ -207,17 +203,21 @@ class data_train:
         plt.ylabel('number of queried data')
         fig.savefig(os.path.join(log_path, 'hist', str(rd)+'.png'))
         plt.close()
-        
+
+        self.clf.train()
+        criterion = nn.CrossEntropyLoss()
+        scaler = torch.cuda.amp.GradScaler()
+
         for epoch in range(n_epoch):
-
-            accCurrent, lossCurrent = self._train(loader_tr, optimizer)
-
+            self._train(epoch, loader_tr, optimizer, criterion, scaler)
             lr_sched.step()
-            
             epoch += 1
-            logging.info('Epoch:' + str(epoch) + '- training accuracy:'+str(accCurrent)+'- training loss:'+str(lossCurrent))
-        
-        logging.info('Epoch:' + str(epoch) + 'Training accuracy:' + str(round(accCurrent, 3)))
+
+        for i in range(n_epoch):
+            mlflow.log_metric('acc', self.acc[i])
+            mlflow.log_metric('loss', self.loss[i])
+            logging.info('Epoch:' + str(i) + '- training accuracy:'+str(self.acc[i])+'- training loss:'+str(self.loss[i]))
+
         torch.save(self.clf.module.state_dict(), log_path+'/weight.pth')
 
 
@@ -252,7 +252,6 @@ class data_train:
                         state_dict[k[len("encoder."):]] = state_dict[k]
                     # delete renamed or unused k
                 self.net.load_state_dict(state_dict, strict=False)
-                del state_dict
             else:
                 self.clf = self.net.apply(weight_reset)
 
@@ -289,16 +288,18 @@ class data_train:
         epoch = 1
         
         dist.barrier()
+
         while epoch <= n_epoch: 
 
-            accCurrent, lossCurrent = self._train(loader_tr, optimizer)
+            self._train(loader_tr, optimizer)
 
             lr_sched.step()
             
             epoch += 1
-            if rank==0:
-                logging.info('Epoch:' + str(epoch) + '- training accuracy:'+str(accCurrent)+'- training loss:'+str(lossCurrent))
         
         if rank==0:
-            logging.info('Epoch:' + str(epoch) + 'Training accuracy:' + str(round(accCurrent, 3)))
+            for i in range(n_epoch):
+                mlflow.log_metric('acc', self.acc[i])
+                mlflow.log_metric('loss', self.loss[i])
+                logging.info('Epoch:' + str(i) + '- training accuracy:'+str(self.acc[i])+'- training loss:'+str(self.loss[i]))
             torch.save(self.clf.module.state_dict(), log_path+'/weight.pth')
