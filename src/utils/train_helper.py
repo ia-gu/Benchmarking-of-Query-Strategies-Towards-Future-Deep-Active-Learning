@@ -111,6 +111,89 @@ class data_train:
 
         return accFinal, class_correct, class_total
 
+    def get_binary_acc_on_set(self, test_dataset, classes, clf):
+  
+        """
+        Calculates and returns the accuracy on the given dataset to test
+        
+        Parameters
+        ----------
+        test_dataset: torch.utils.data.Dataset
+            The dataset to test
+        classes: list
+            The list of each class name
+        clf: torch.nn.Module
+            Model
+        Returns
+        -------
+        accFinal: float
+            The fraction of data points whose predictions by the current model match their targets
+        class_correct: list
+            The list of correct numbers of each class
+        class_total: list
+            The list of total numbers of each class
+        """	
+        
+        self.clf = clf
+
+        if test_dataset is None:
+            raise ValueError("Test data not present")
+        
+        loader_te = DataLoader(test_dataset, shuffle=False, pin_memory=True, batch_size=self.cfg.batch_size, num_workers=8)
+        self.clf.eval()
+
+        binary_correct = [0.]*2
+        binary_total = [0.]*2
+        class_correct = [0.]*len(classes)
+        class_total = [0.]*len(classes)
+        loop = tqdm(loader_te, unit='batch', desc='| Test |', dynamic_ncols=True)
+
+        with torch.no_grad():
+            self.clf = self.clf.to(self.device)
+            for _, (x,y) in enumerate(loop): 
+                x, y = x.to(device=self.device), y.to(device=self.device)
+                outputs = self.clf(x)
+                _, predicted = torch.max(outputs, 1)
+                c = (predicted == y)
+                # GAPs
+                if len(classes)>2:
+                    for i in range(len(y)):
+                        # OK data
+                        if y[i]==3:
+                            if predicted[i]==3:
+                                binary_correct[0] += 1
+                            binary_total[0] += 1
+                        # NG data
+                        else:
+                            if not predicted[i]==3:
+                                binary_correct[1] += 1
+                            binary_total[1] += 1
+                        # acc on each class
+                        label = y[i]
+                        class_correct[label] += c[i].item()
+                        class_total[label] += 1
+                # KSDD2
+                else:
+                    for i in range(len(y)):
+                        if y[i]==1:
+                            if predicted[i]==1:
+                                binary_correct[0] += 1
+                            binary_total[0] += 1
+                        else:
+                            if predicted[i]==0:
+                                binary_correct[1] += 1
+                            binary_total[1] += 1
+                        label = y[i]
+                        class_correct[label] += c[i].item()
+                        class_total[label] += 1
+
+                    
+
+        accFinal = sum(class_correct) / sum(class_total)
+        binary_accFinal = sum(binary_correct) / sum(binary_total)
+        del loader_te, loop, outputs, predicted
+        return accFinal, class_correct, class_total, binary_accFinal, binary_correct, binary_total
+
 
     def _train(self, epoch, loader_tr, optimizer, criterion, scaler):
         accFinal = 0.
@@ -218,7 +301,7 @@ class data_train:
             mlflow.log_metric('loss', self.loss[i])
             logging.info('Epoch:' + str(i) + '- training accuracy:'+str(self.acc[i])+'- training loss:'+str(self.loss[i]))
 
-        torch.save(self.clf.module.state_dict(), log_path+'/weight.pth')
+        torch.save(self.clf.module.state_dict(), log_path+'/weight'+str(rd)+'.pth')
 
 
     def ddp_train(self, rank, classes, rd, log_path):
@@ -302,4 +385,4 @@ class data_train:
                 mlflow.log_metric('acc', self.acc[i])
                 mlflow.log_metric('loss', self.loss[i])
                 logging.info('Epoch:' + str(i) + '- training accuracy:'+str(self.acc[i])+'- training loss:'+str(self.loss[i]))
-            torch.save(self.clf.module.state_dict(), log_path+'/weight.pth')
+            torch.save(self.clf.module.state_dict(), log_path+'/weight'+str(rd)+'.pth')

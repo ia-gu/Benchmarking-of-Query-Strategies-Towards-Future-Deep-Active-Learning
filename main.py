@@ -97,6 +97,15 @@ class TrainClassifier:
             train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
             test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
 
+        elif data_cfg.name == 'KSDD2':
+            self.classes = ('NG', 'OK')
+            train_data_path = '/data/dataset/ksdd2/train'
+            test_data_path = '/data/dataset/ksdd2/test'
+            train_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+            test_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+            train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
+            test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
+
         elif data_cfg.name == 'ImageNet':
             self.channels = 3
             self.classes = list()
@@ -188,10 +197,15 @@ class TrainClassifier:
 
         # test
         clf = self.getModel()
-        clf.load_state_dict(torch.load(self.log_path+'/weight.pth', map_location="cpu"))
+        clf.load_state_dict(torch.load(self.log_path+'/weight0.pth', map_location="cpu"))
         strategy.update_model(clf)
-        acc = np.zeros(n_rounds)
-        acc[0], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
+        acc = np.zeros(n_rounds);b_acc = np.zeros(n_rounds)
+        if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
+            precision = [];recall = [];f_score = [];ber = []
+            binary_class = ['OK', 'NG']
+            acc[0], class_correct, class_total, b_acc[0], binary_correct, binary_total = dt.get_binary_acc_on_set(test_dataset, self.classes, clf)
+        else:
+            acc[0], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
         mlflow.log_metric('final_acc', acc[0], step=len(train_dataset))
         logging.info(f'training points: {len(train_dataset)}')
         logging.info(f'test accuracy: {round(acc[0]*100, 2)}')
@@ -199,7 +213,25 @@ class TrainClassifier:
         for i in range(self.num_classes):
             mlflow.log_metric(self.classes[i], (class_correct[i]/class_total[i]), step=len(train_dataset))
             logging.info(f'class{self.classes[i]} accuracy: {100*class_correct[i]/class_total[i]}')
-
+        if self.cfg.dataset.name == 'GAPs':
+            for i in range(2):
+                mlflow.log_metric(binary_class[i], (binary_correct[i]/binary_total[i]), step=len(train_dataset))
+                logging.info(f'class{binary_class[i]} accuracy: {binary_correct[i]/binary_total[i]}')
+            true_positive = binary_correct[0]/binary_total[0]
+            false_negative = 1-true_positive
+            true_negative = binary_correct[1]/binary_total[1]
+            false_positive = 1-true_negative
+            precision.append(true_positive/(true_positive+false_positive))
+            mlflow.log_metric('precision', precision[-1], step=len(train_dataset))
+            recall.append(true_positive/(true_positive+false_negative))
+            mlflow.log_metric('recall', recall[-1], step=len(train_dataset))
+            f_score.append(2*(precision[-1]*recall[-1])/(precision[-1]+recall[-1]))
+            mlflow.log_metric('f_score', f_score[-1], step=len(train_dataset))
+            ber.append((false_positive/(false_positive+true_negative)+false_negative/(true_positive+false_negative))/2)
+            mlflow.log_metric('BER', ber[-1], step=len(train_dataset))
+            mlflow.log_metric('final_acc', acc[0], step=len(train_dataset))
+            mlflow.log_metric('final_b_acc', b_acc[0], step=len(train_dataset))
+            logging.info(f'binary test accuracy: {round(b_acc[0]*100, 2)}')
 
         print('***************************')
         print('Starting Training..')
@@ -228,9 +260,12 @@ class TrainClassifier:
             
             t2 = time.time()
             clf = self.getModel()
-            clf.load_state_dict(torch.load(self.log_path+'/weight.pth', map_location="cpu"), strict=False)
+            clf.load_state_dict(torch.load(self.log_path+'/weight'+str(rd)+'.pth', map_location="cpu"), strict=False)
             strategy.update_model(clf)
-            acc[rd], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
+            if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
+                acc[rd], class_correct, class_total, b_acc[rd], binary_correct, binary_total= dt.get_binary_acc_on_set(test_dataset, self.classes, clf)
+            else:
+                acc[rd], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
             mlflow.log_metric('final_acc', acc[rd], step=len(train_dataset))
             logging.info(f'training points: {len(train_dataset)}')
             logging.info(f'test accuracy: {round(acc[rd]*100, 2)}')
@@ -239,6 +274,27 @@ class TrainClassifier:
             for i in range(self.num_classes):
                 mlflow.log_metric(self.classes[i], 100*class_correct[i]/class_total[i], step=len(train_dataset))
                 logging.info(f'class{self.classes[i]} accuracy: {100*class_correct[i]/class_total[i]}')
+            if self.cfg.dataset.name == 'GAPs':
+                            # binary evaluation
+                for i in range(2):
+                    mlflow.log_metric(binary_class[i], binary_correct[i]/binary_total[i], step=len(train_dataset))
+                    logging.info(f'class{binary_class[i]} accuracy: {binary_correct[i]/binary_total[i]}')
+                true_positive = binary_correct[0]/binary_total[0]
+                false_negative = 1-true_positive
+                true_negative = binary_correct[1]/binary_total[1]
+                false_positive = 1-true_negative
+                recall.append(true_positive/(true_positive+false_positive))
+                mlflow.log_metric('precision', precision[-1], step=len(train_dataset))
+                precision.append(true_positive/(true_positive+false_negative))
+                mlflow.log_metric('recall', precision[-1], step=len(train_dataset))
+                f_score.append(2*(precision[-1]*recall[-1])/(precision[-1]+recall[-1]))
+                mlflow.log_metric('f_score', f_score[-1], step=len(train_dataset))
+                ber.append((false_positive/(false_positive+true_negative)+false_negative/(true_positive+false_negative))/2)
+                mlflow.log_metric('BER', ber[-1], step=len(train_dataset))
+                mlflow.log_metric('final_acc', acc[rd], step=len(train_dataset))
+                mlflow.log_metric('final_b_acc', b_acc[rd], step=len(train_dataset))
+                logging.info(f'binary test accuracy: {round(b_acc[rd]*100, 2)}')
+
 
         print('Training Completed!')
 

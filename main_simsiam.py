@@ -1,11 +1,19 @@
+#!/usr/bin/env python
+# Copyright (c) Facebook, Inc. and its affiliates.
+# All rights reserved.
+
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
+import math
 import os
 import random
-import math
 import shutil
 import mlflow
 import hydra
+import yaml
 import logging
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 import torch
 import torch.nn as nn
@@ -17,11 +25,12 @@ from torch.utils.data import ConcatDataset
 
 import simsiam.simsiam.loader as loader
 import simsiam.simsiam.builder as builder
-from src.utils.models.resnet import Original_ResNet
-from src.utils.models.resnet import ResNet18
+from src.utils.models.resnet import OriginalResNet
+from simsiam.simsiam.resnet import ResNet18
 
-def prepare_train_dataset(cfg):
-    if cfg.dataset.name == 'CIFAR10':
+# dataset
+def prepare_train_dataset(args):
+    if args['dataset']['name'] == 'CIFAR10':
         augmentation = [
             transforms.RandomResizedCrop(32, scale=(0.2, 1.)),
             transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
@@ -36,7 +45,7 @@ def prepare_train_dataset(cfg):
             traindir,
             loader.TwoCropsTransform(transforms.Compose(augmentation)))
     
-    elif cfg.dataset.name == 'EuroSAT':
+    elif args['dataset']['name'] == 'EuroSAT':
         augmentation = [
             transforms.RandomResizedCrop(64, scale=(0.2, 1.)),
             transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
@@ -44,56 +53,70 @@ def prepare_train_dataset(cfg):
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
         ]
-        traindir = '/data/dataset/eurosat/train'
+        traindir = '/data/dataset/eurosat/2750'
         train_dataset = datasets.ImageFolder(
             traindir,
             loader.TwoCropsTransform(transforms.Compose(augmentation)))
     
-    elif cfg.dataset.name == 'BrainTumor':
+    elif args['dataset']['name'] == 'BrainTumor':
         augmentation = [
             transforms.RandomResizedCrop(256, scale=(0.2, 1.)),
             transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/data/dataset/brain_tumor/BrainTumor'
         train_dataset = datasets.ImageFolder(root=traindir+'/'+str(1), transform=loader.TwoCropsTransform(transforms.Compose(augmentation)))
         for i in range(2, 5):
             train_dataset = ConcatDataset([train_dataset, (datasets.ImageFolder(root=traindir+'/'+str(i), transform=loader.TwoCropsTransform(transforms.Compose(augmentation))))])
     
-    elif cfg.dataset.name == 'OCT':
+    elif args['dataset']['name'] == 'OCT':
         augmentation = [
             transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
             transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/data/dataset/oct_modified/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             loader.TwoCropsTransform(transforms.Compose(augmentation)))
     
-    elif cfg.dataset.name == 'GAPs':
+    elif args['dataset']['name'] == 'GAPs':
         augmentation = [
             transforms.RandomResizedCrop(64, scale=(0.2, 1.)),
             transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/data/dataset/gaps/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             loader.TwoCropsTransform(transforms.Compose(augmentation)))
-    
-    elif cfg.dataset.name == 'ImageNet':
+
+    elif args['dataset']['name'] == 'KSDD2':
+        augmentation = [
+            transforms.RandomResizedCrop(256, scale=(0.2, 1.)),
+            transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
+            transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
+        ]
+        traindir = '/data/dataset/ksdd2/train'
+        train_dataset = datasets.ImageFolder(
+            traindir,
+            loader.TwoCropsTransform(transforms.Compose(augmentation)))
+
+    elif args['dataset']['name'] == 'ImageNet':
         augmentation = [
             transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
             transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
@@ -101,7 +124,7 @@ def prepare_train_dataset(cfg):
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/imagenet_dataset/ILSVRC2012_img_train'
         train_dataset = datasets.ImageFolder(
@@ -109,7 +132,7 @@ def prepare_train_dataset(cfg):
             loader.TwoCropsTransform(transforms.Compose(augmentation)))
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=cfg.train_parametres.batch_size, shuffle=True,
+        train_dataset, batch_size=args['train_parameters']['batch_size'], shuffle=True,
         num_workers=16, pin_memory=True, drop_last=True)
     return train_loader
 
@@ -121,52 +144,59 @@ def main(cfg : DictConfig):
         mlflow.set_experiment(cfg.mlflow_runname)
         with mlflow.start_run():
             os.chdir(hydra.utils.get_original_cwd())
+            config = OmegaConf.to_yaml(cfg)
+            config = yaml.safe_load(config)
+            print('dataset: ', end='')
+            print(config['dataset'])
+            args = config
             mlflow.log_params(cfg.dataset)
             mlflow.log_params(cfg.train_parameters)
 
             # fix seed
-            random_seed = cfg.train_parmeters.seed
+            random_seed = config['train_parameters']['seed']
             random.seed(random_seed)
             torch.manual_seed(random_seed)
             torch.cuda.manual_seed(random_seed)
+            torch.backends.cudnn.benchmark = False
             torch.backends.cudnn.deterministic = True
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             gpu_ids=[]
             for i in range(torch.cuda.device_count()):
                 gpu_ids.append(i)
             
-            print(f'use {gpu_ids} gpu')
+            print(f'device: {device}')
+            print(f'use gpu: {gpu_ids}')
 
             # fit batch_size
-            cfg.train_parameters.batch_size = int(cfg.train_parameters.batch_size/8*len(gpu_ids))
+            args['train_parameters']['batch_size'] = int(args['train_parameters']['batch_size']/8*len(gpu_ids))
             
-            main_worker(device, gpu_ids, cfg)
+            main_worker(device, gpu_ids, args)
 
 
-def main_worker(device, gpu_ids, cfg):
+def main_worker(device, gpu_ids, args):
 
     # model
-    if cfg.dataset.name == 'CIFAR10':
+    if args['dataset']['name'] == 'CIFAR10':
         model = builder.SimSiam(
             ResNet18,
-            cfg.train_parameters.dim, cfg.train_parameters.pred_dim)
+            args['train_parameters']['dim'], args['train_parameters']['pred_dim'])
     else:
         model = builder.SimSiam(
-            Original_ResNet,
-            cfg.train_parameters.dim, cfg.train_parameters.pred_dim)
-    if cfg.train_parameters.start_epoch > 0:
-        model.load_state_dict(torch.load('weights/'+cfg.dataset.name+'/'+str(cfg.train_parameters.seed)+'/checkpoint.pth.tar')['state_dict'])
+            OriginalResNet,
+            args['train_parameters']['dim'], args['train_parameters']['pred_dim'])
+    if args['train_parameters']['start_epoch'] > 0:
+        model.load_state_dict(torch.load('weights/'+args['dataset']['name']+'/'+str(args['train_parameters']['seed'])+'/checkpoint.pth.tar')['state_dict'])
     model = torch.nn.DataParallel(model, device_ids=gpu_ids)
     model.to(device)
 
     # infer learning rate before changing batch size
-    init_lr = cfg.train_parameters.lr * cfg.train_parameters.batch_size / 256
+    init_lr = args['train_parameters']['lr'] * args['train_parameters']['batch_size'] / 256
 
     # loss
     criterion = nn.CosineSimilarity(dim=1).to(device)
 
     # learning rate setting
-    if cfg.train_parameters.fix_pred_lr:
+    if args['train_parameters']['fix-pred-lr']:
         optim_params = [{'params': model.module.encoder.parameters(), 'fix_lr': False},
                         {'params': model.module.predictor.parameters(), 'fix_lr': True}]
     else:
@@ -177,12 +207,14 @@ def main_worker(device, gpu_ids, cfg):
     print(optimizer)
 
     # dataset
-    train_loader = prepare_train_dataset(cfg)
+    train_loader = prepare_train_dataset(args)
     
-    os.makedirs('weights/'+cfg.dataset.name+'/'+str(cfg.train_parameters.seed), exist_ok=True)
+    os.makedirs('weights/'+args['dataset']['name']+'/'+str(args['train_parameters']['seed']), exist_ok=True)
 
-    for epoch in range(cfg.train_parameters.start_epoch, cfg.train_parameters.n_epoch):
-        adjust_learning_rate(optimizer, init_lr, epoch, cfg)
+    for epoch in range(args['train_parameters']['start_epoch'], args['train_parameters']['n_epoch']):
+        print('adjust_learning_rate')
+        adjust_learning_rate(optimizer, init_lr, epoch, args)
+        print(optimizer)
 
         # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch, device)
@@ -190,7 +222,7 @@ def main_worker(device, gpu_ids, cfg):
         save_checkpoint({
             'state_dict': model.module.state_dict(),
             'optimizer' : optimizer.state_dict(),
-        }, is_best=False, filename='weights/'+cfg.dataset.name+'/'+str(cfg.train_parameters.seed)+'/checkpoint.pth.tar')
+        }, is_best=False, filename='weights/'+args['dataset']['name']+'/'+str(args['train_parameters']['seed'])+'/checkpoint.pth.tar')
 
 from tqdm import tqdm
 def train(train_loader, model, criterion, optimizer, epoch, device):
@@ -201,6 +233,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
         prefix="Epoch: [{}]".format(epoch))
 
     # switch to train mode
+    print('train_mode')
     model.train()
 
     # end = time.time()
@@ -275,14 +308,15 @@ class ProgressMeter(object):
         return '[' + fmt + '/' + fmt.format(num_batches) + ']'
 
 
-def adjust_learning_rate(optimizer, init_lr, epoch, cfg):
+def adjust_learning_rate(optimizer, init_lr, epoch, args):
     """Decay the learning rate based on schedule"""
-    cur_lr = init_lr * 0.5 * (1. + math.cos(math.pi * epoch / cfg.train_parameters.n_epoch))
+    cur_lr = init_lr * 0.5 * (1. + math.cos(math.pi * epoch / args['train_parameters']['n_epoch']))
     for param_group in optimizer.param_groups:
         if 'fix_lr' in param_group and param_group['fix_lr']:
             param_group['lr'] = init_lr
         else:
             param_group['lr'] = cur_lr
+    print(f'current lr: {param_group["lr"]}')
 
 if __name__ == '__main__':
 
