@@ -213,7 +213,7 @@ class TrainClassifier:
         for i in range(self.num_classes):
             mlflow.log_metric(self.classes[i], (class_correct[i]/class_total[i]), step=len(train_dataset))
             logging.info(f'class{self.classes[i]} accuracy: {100*class_correct[i]/class_total[i]}')
-        if self.cfg.dataset.name == 'GAPs':
+        if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
             for i in range(2):
                 mlflow.log_metric(binary_class[i], (binary_correct[i]/binary_total[i]), step=len(train_dataset))
                 logging.info(f'class{binary_class[i]} accuracy: {binary_correct[i]/binary_total[i]}')
@@ -274,8 +274,8 @@ class TrainClassifier:
             for i in range(self.num_classes):
                 mlflow.log_metric(self.classes[i], 100*class_correct[i]/class_total[i], step=len(train_dataset))
                 logging.info(f'class{self.classes[i]} accuracy: {100*class_correct[i]/class_total[i]}')
-            if self.cfg.dataset.name == 'GAPs':
-                            # binary evaluation
+            if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
+                # binary evaluation
                 for i in range(2):
                     mlflow.log_metric(binary_class[i], binary_correct[i]/binary_total[i], step=len(train_dataset))
                     logging.info(f'class{binary_class[i]} accuracy: {binary_correct[i]/binary_total[i]}')
@@ -284,9 +284,9 @@ class TrainClassifier:
                 true_negative = binary_correct[1]/binary_total[1]
                 false_positive = 1-true_negative
                 recall.append(true_positive/(true_positive+false_positive))
-                mlflow.log_metric('precision', precision[-1], step=len(train_dataset))
+                mlflow.log_metric('recall', recall[-1], step=len(train_dataset))
                 precision.append(true_positive/(true_positive+false_negative))
-                mlflow.log_metric('recall', precision[-1], step=len(train_dataset))
+                mlflow.log_metric('precision', precision[-1], step=len(train_dataset))
                 f_score.append(2*(precision[-1]*recall[-1])/(precision[-1]+recall[-1]))
                 mlflow.log_metric('f_score', f_score[-1], step=len(train_dataset))
                 ber.append((false_positive/(false_positive+true_negative)+false_negative/(true_positive+false_negative))/2)
@@ -313,7 +313,28 @@ class TrainClassifier:
             writer = csv.writer(f)
             writer.writerow([self.cfg.train_parameters.seed])
             writer.writerow(acc)
-
+        if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
+            with open(self.log_path+'/../../ber.csv', mode='a') as f:
+                writer = csv.writer(f)
+                writer.writerow([self.cfg.train_parameters.seed])
+                writer.writerow(ber)
+            with open(self.log_path+'/../../f_score.csv', mode='a') as f:
+                writer = csv.writer(f)
+                writer.writerow([self.cfg.train_parameters.seed])
+                writer.writerow(f_score)
+            with open(self.log_path+'/../../precision.csv', mode='a') as f:
+                writer = csv.writer(f)
+                writer.writerow([self.cfg.train_parameters.seed])
+                writer.writerow(precision)
+            with open(self.log_path+'/../../recall.csv', mode='a') as f:
+                writer = csv.writer(f)
+                writer.writerow([self.cfg.train_parameters.seed])
+                writer.writerow(recall)
+            with open(self.log_path+'/../../binary_result.csv', mode='a') as f:
+                writer = csv.writer(f)
+                writer.writerow([self.cfg.train_parameters.seed])
+                writer.writerow(b_acc)
+                
 # hydra
 @hydra.main(config_name='base', config_path='configs', version_base='1.1')
 def main(cfg : DictConfig):
