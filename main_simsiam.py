@@ -53,7 +53,7 @@ def prepare_train_dataset(args):
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/data/dataset/eurosat/2750'
         train_dataset = datasets.ImageFolder(
@@ -67,7 +67,7 @@ def prepare_train_dataset(args):
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/data/dataset/brain_tumor/BrainTumor'
         train_dataset = datasets.ImageFolder(root=traindir+'/'+str(1), transform=loader.TwoCropsTransform(transforms.Compose(augmentation)))
@@ -81,7 +81,7 @@ def prepare_train_dataset(args):
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/data/dataset/oct_modified/train'
         train_dataset = datasets.ImageFolder(
@@ -95,7 +95,7 @@ def prepare_train_dataset(args):
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/data/dataset/gaps/train'
         train_dataset = datasets.ImageFolder(
@@ -109,7 +109,7 @@ def prepare_train_dataset(args):
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/data/dataset/ksdd2/train'
         train_dataset = datasets.ImageFolder(
@@ -124,7 +124,7 @@ def prepare_train_dataset(args):
             transforms.RandomApply([loader.GaussianBlur([.1, 2.])], p=0.5),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 5), (0.5, 0.5, 0.5)),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
         traindir = '/imagenet_dataset/ILSVRC2012_img_train'
         train_dataset = datasets.ImageFolder(
