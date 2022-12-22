@@ -1,3 +1,6 @@
 strategy: glister
 batch_size: 20
 lr: 0.01
+typeOf: Diversity
+lam: 10
+kernel_batch_size: 200

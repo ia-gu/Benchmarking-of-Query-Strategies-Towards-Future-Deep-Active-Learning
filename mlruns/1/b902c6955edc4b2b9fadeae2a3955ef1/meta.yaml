@@ -1,0 +1,15 @@
+artifact_uri: file:///home/ueno/test/al/mlruns/1/b902c6955edc4b2b9fadeae2a3955ef1/artifacts
+end_time: 1671603154280
+entry_point_name: ''
+experiment_id: '1'
+lifecycle_stage: active
+name: ''
+run_id: b902c6955edc4b2b9fadeae2a3955ef1
+run_uuid: b902c6955edc4b2b9fadeae2a3955ef1
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1671603141899
+status: 3
+tags: []
+user_id: ueno

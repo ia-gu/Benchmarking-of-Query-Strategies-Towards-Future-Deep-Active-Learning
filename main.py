@@ -1,13 +1,10 @@
 import os
 import random
 import numpy as np
-import matplotlib.pyplot as plt
 import sys
-import time
 import mlflow
 import hydra
 import logging
-import csv
 import gc
 from omegaconf import DictConfig
 
@@ -15,13 +12,12 @@ sys.path.append('./')
 import torch
 import torch.multiprocessing as mp
 from torch.utils.data import Subset, ConcatDataset
-from torchvision import datasets, transforms
 
 from src.utils.models.resnet import ResNet18
 from src.utils.models.resnet import OriginalResNet
-from src.active_learning_strategies import GLISTER, BADGE, EntropySampling, RandomSampling, LeastConfidenceSampling, \
-                                        MarginSampling, CoreSet, AdversarialBIM, AdversarialDeepFool, KMeansSampling, \
-                                        BALDDropout, FASS, BatchBALDDropout, SubmodularSampling, ClusterMarginSampling
+from src.utils.logger import Logger
+from src.utils.dataset import get_data
+from src.utils.query_strategy import get_strategy
 from src.utils.train_helper import data_train
 from src.utils.utils import LabeledToUnlabeledDataset
 
@@ -34,95 +30,12 @@ class TrainClassifier:
         self.channels = 1
 
     def getModel(self,):
-
-        if self.model_name == 'resnet':
-            net = OriginalResNet(num_classes = self.num_classes, channels = self.channels)
-
-        else:
-            # ResNet18 for CIFAR10
-            net = ResNet18(num_classes = self.num_classes, channels = self.channels)
+        net = OriginalResNet(num_classes=len(self.classes), channels=self.channels) if self.model_name=='resnet' \
+        else  ResNet18(num_classes=len(self.classes), channels=self.channels)
 
         return net
 
-    def getData(self, data_cfg):
-        # download_path needs to be modified
-        # data_path also needs to be modified
-
-        if data_cfg.name == 'CIFAR10':
-            self.model_name = 'modified_resnet'
-            self.channels = 3
-            self.classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-            download_path = './downloaded_data/'
-            train_transform = transforms.Compose([transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
-            test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
-            train_dataset = datasets.CIFAR10(download_path, download=True, train=True, transform=train_transform, target_transform=torch.tensor)
-            test_dataset = datasets.CIFAR10(download_path, download=True, train=False, transform=test_transform, target_transform=torch.tensor)
-
-        elif data_cfg.name == 'EuroSAT':
-            self.channels = 3
-            self.classes = ('AnnualCrop', 'Forest', 'Herbaceous', 'Highway', 'Industrial', 'Pasture', 'PermanentCrop', 'Residential', 'River', 'SeaLake')
-            train_data_path = '/data/dataset/eurosat/train'
-            test_data_path = '/data/dataset/eurosat/test'
-            train_transform = transforms.Compose([transforms.RandomVerticalFlip(), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
-            test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
-
-        elif data_cfg.name == 'BrainTumor':
-            self.classes = ('Glioma', 'Meningioma', 'Pituitary')
-            train_data_path = '/data/dataset/brain_tumor/BrainTumor'
-            test_data_path = '/data/dataset/brain_tumor/BrainTumor/5'
-            train_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            test_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            train_dataset = datasets.ImageFolder(root=train_data_path+'/'+str(1), transform=train_transform)
-            for i in range(2, 5):
-                train_dataset = ConcatDataset([train_dataset, (datasets.ImageFolder(root=train_data_path+'/'+str(i), transform=train_transform))])
-            test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
-
-        elif data_cfg.name == 'OCT':
-            self.classes = ('CNV', 'DME', 'DRUSEN', 'NORMAL')
-            train_data_path = '/data/dataset/oct_modified/train'
-            test_data_path = '/data/dataset/oct_modified/test'
-            train_transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            test_transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
-            test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
-        
-        elif data_cfg.name == 'GAPs':
-            self.classes = ('AppliedPatch', 'Crack', 'InlaidPatch', 'IntactRoad', 'OpenJoint', 'Pothol')
-            train_data_path = '/data/dataset/gaps/train'
-            test_data_path = '/data/dataset/gaps/test'
-            train_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
-            test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
-
-        elif data_cfg.name == 'KSDD2':
-            self.classes = ('NG', 'OK')
-            train_data_path = '/data/dataset/ksdd2/train'
-            test_data_path = '/data/dataset/ksdd2/test'
-            train_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            test_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-            train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
-            test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
-
-        elif data_cfg.name == 'ImageNet':
-            self.channels = 3
-            self.classes = list()
-            for i in range(1000):
-                self.classes.append(str(i))
-            train_data_path = '/imagenet_dataset/imagenet_2012/ILSVRC2012_img_train'
-            test_data_path = '/imagenet_dataset/imagenet_2012/ILSVRC2012_img_val_for_ImageFolder'
-            train_transform = transforms.Compose([transforms.RandomResizedCrop(224, scale=(0.2, 1.)), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-            test_transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-            train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
-            test_dataset = datasets.ImageFolder(root=test_data_path, transform=test_transform)
-
-        self.num_classes = len(self.classes)
-        return train_dataset, test_dataset
-
     def train_classifier(self):
-        t = time.time()
         mlflow.log_params(self.cfg.al_method)
         mlflow.log_params(self.cfg.dataset)
         mlflow.log_params(self.cfg.train_parameters)
@@ -135,57 +48,16 @@ class TrainClassifier:
         torch.backends.cudnn.deterministic = True
         torch.use_deterministic_algorithms = True
         
-        full_train_dataset, test_dataset = self.getData(self.cfg.dataset)
+        logger = Logger(self.log_path)
+        full_train_dataset, test_dataset, self.model_name, self.channels, self.classes = get_data(self.cfg.dataset)
         net = self.getModel()
-        selected_strat = self.cfg.al_method.strategy
-        budget = self.cfg.dataset.budget
-        start = self.cfg.dataset.initial_points
-        n_rounds = self.cfg.dataset.rounds
-        strategy_cfg = self.cfg.al_method
-        nSamps = len(full_train_dataset)
-        start_idxs = np.random.choice(nSamps, size=start, replace=False)
+        start_idxs = np.random.choice(len(full_train_dataset), size=self.cfg.dataset.initial_points, replace=False)
         train_dataset = Subset(full_train_dataset, start_idxs)
         unlabeled_dataset = Subset(full_train_dataset, list(set(range(len(full_train_dataset))) -  set(start_idxs)))
-        del full_train_dataset, start, nSamps, start_idxs
-
-        if selected_strat == 'badge':
-            strategy = BADGE(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'glister':
-            strategy = GLISTER(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg,validation_dataset=None,\
-                    typeOf='Diversity',lam=10)
-        elif selected_strat == 'entropy_sampling':
-            strategy = EntropySampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'margin_sampling':
-            strategy = MarginSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'least_confidence':
-            strategy = LeastConfidenceSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'coreset':
-            strategy = CoreSet(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'fass':
-            strategy = FASS(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'random_sampling':
-            strategy = RandomSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'bald_dropout':
-            strategy = BALDDropout(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'adversarial_bim':
-            strategy = AdversarialBIM(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'kmeans_sampling':
-            strategy = KMeansSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'adversarial_deepfool':
-            strategy = AdversarialDeepFool(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'batch_bald':
-            strategy = BatchBALDDropout(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'submodlib':
-            strategy = SubmodularSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        elif selected_strat == 'cluster_margin':
-            strategy = ClusterMarginSampling(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, self.num_classes, strategy_cfg)
-        else:
-            raise IOError('Enter Valid Strategy!')
+        strategy = get_strategy(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, len(self.classes), self.cfg.al_method)
         
-        logging.info('#########################')
-        logging.info('round0')
-        logging.info('#########################')
-        dt = data_train(train_dataset, net, self.cfg.train_parameters, self.cfg.dataset)
+        logging.info('#########################\nround0\n#########################')
+        dt = data_train(train_dataset, net, self.cfg.train_parameters, self.cfg.dataset, logger)
 
         # Use DDP when your dataset is ImageNet and use multi-GPU
         if self.cfg.dataset.name == 'ImageNet' and torch.cuda.device_count()>1:
@@ -193,147 +65,40 @@ class TrainClassifier:
             os.environ['MASTER_PORT'] = '12355'
             mp.spawn(dt.ddp_train, cfg=(self.classes, 0, self.log_path), nprocs=torch.cuda.device_count())
         else:
-            dt.train(self.classes, 0, self.log_path)
+            dt.train(self.classes)
 
         # test
         clf = self.getModel()
         clf.load_state_dict(torch.load(self.log_path+'/weight0.pth', map_location="cpu"))
         strategy.update_model(clf)
-        acc = np.zeros(n_rounds);b_acc = np.zeros(n_rounds)
-        if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
-            precision = [];recall = [];f_score = [];ber = []
-            binary_class = ['OK', 'NG']
-            acc[0], class_correct, class_total, b_acc[0], binary_correct, binary_total = dt.get_binary_acc_on_set(test_dataset, self.classes, clf)
-        else:
-            acc[0], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
-        mlflow.log_metric('final_acc', acc[0], step=len(train_dataset))
-        logging.info(f'training points: {len(train_dataset)}')
-        logging.info(f'test accuracy: {round(acc[0]*100, 2)}')
-        logging.info(f'trainning time: {time.time()-t}')
-        for i in range(self.num_classes):
-            mlflow.log_metric(self.classes[i], (class_correct[i]/class_total[i]), step=len(train_dataset))
-            logging.info(f'class{self.classes[i]} accuracy: {100*class_correct[i]/class_total[i]}')
-        if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
-            for i in range(2):
-                mlflow.log_metric(binary_class[i], (binary_correct[i]/binary_total[i]), step=len(train_dataset))
-                logging.info(f'class{binary_class[i]} accuracy: {binary_correct[i]/binary_total[i]}')
-            true_positive = binary_correct[0]/binary_total[0]
-            false_negative = 1-true_positive
-            true_negative = binary_correct[1]/binary_total[1]
-            false_positive = 1-true_negative
-            precision.append(true_positive/(true_positive+false_positive))
-            mlflow.log_metric('precision', precision[-1], step=len(train_dataset))
-            recall.append(true_positive/(true_positive+false_negative))
-            mlflow.log_metric('recall', recall[-1], step=len(train_dataset))
-            f_score.append(2*(precision[-1]*recall[-1])/(precision[-1]+recall[-1]))
-            mlflow.log_metric('f_score', f_score[-1], step=len(train_dataset))
-            ber.append((false_positive/(false_positive+true_negative)+false_negative/(true_positive+false_negative))/2)
-            mlflow.log_metric('BER', ber[-1], step=len(train_dataset))
-            mlflow.log_metric('final_acc', acc[0], step=len(train_dataset))
-            mlflow.log_metric('final_b_acc', b_acc[0], step=len(train_dataset))
-            logging.info(f'binary test accuracy: {round(b_acc[0]*100, 2)}')
+        dt.get_acc_on_set(test_dataset, self.classes, clf)
 
-        print('***************************')
-        print('Starting Training..')
-        print('***************************')
-        for rd in range(1, n_rounds):
-            logging.info('#########################')
-            logging.info(f'round{rd}')
-            logging.info('#########################')
-            t0 = time.time()
-            idx = strategy.select(budget)
-            t1 = time.time()
+        for rd in range(1, self.cfg.dataset.rounds):
+            logging.info(f'#########################\nround{rd}\n#########################')
+            logger.rd = rd
+            gc.collect()
 
-            # Adding new points to training set
+            # query data
+            idx = strategy.select(self.cfg.dataset.budget)
             train_dataset = ConcatDataset([train_dataset, Subset(unlabeled_dataset, idx)])
             remain_idx = list(set(range(len(unlabeled_dataset)))-set(idx))
             unlabeled_dataset = Subset(unlabeled_dataset, remain_idx)
 
             strategy.update_data(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset))
-            dt = data_train(train_dataset, net, self.cfg.train_parameters, self.cfg.dataset)
-            gc.collect()
+            dt = data_train(train_dataset, net, self.cfg.train_parameters, self.cfg.dataset, logger)
 
             if self.cfg.dataset.name == 'ImageNet' and torch.cuda.device_count()>1:
                 mp.spawn(dt.ddp_train, cfg=(self.classes, rd, self.log_path), nprocs=torch.cuda.device_count())
             else:
-                dt.train(self.classes, rd, self.log_path)
+                dt.train(self.classes)
             
-            t2 = time.time()
             clf = self.getModel()
             clf.load_state_dict(torch.load(self.log_path+'/weight'+str(rd)+'.pth', map_location="cpu"), strict=False)
             strategy.update_model(clf)
-            if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
-                acc[rd], class_correct, class_total, b_acc[rd], binary_correct, binary_total= dt.get_binary_acc_on_set(test_dataset, self.classes, clf)
-            else:
-                acc[rd], class_correct, class_total = dt.get_acc_on_set(test_dataset, self.classes, clf)
-            mlflow.log_metric('final_acc', acc[rd], step=len(train_dataset))
-            logging.info(f'training points: {len(train_dataset)}')
-            logging.info(f'test accuracy: {round(acc[rd]*100, 2)}')
-            logging.info(f'selection time: {t1-t0}')
-            logging.info(f'training time: {t2-t1}')
-            for i in range(self.num_classes):
-                mlflow.log_metric(self.classes[i], 100*class_correct[i]/class_total[i], step=len(train_dataset))
-                logging.info(f'class{self.classes[i]} accuracy: {100*class_correct[i]/class_total[i]}')
-            if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
-                # binary evaluation
-                for i in range(2):
-                    mlflow.log_metric(binary_class[i], binary_correct[i]/binary_total[i], step=len(train_dataset))
-                    logging.info(f'class{binary_class[i]} accuracy: {binary_correct[i]/binary_total[i]}')
-                true_positive = binary_correct[0]/binary_total[0]
-                false_negative = 1-true_positive
-                true_negative = binary_correct[1]/binary_total[1]
-                false_positive = 1-true_negative
-                recall.append(true_positive/(true_positive+false_positive))
-                mlflow.log_metric('recall', recall[-1], step=len(train_dataset))
-                precision.append(true_positive/(true_positive+false_negative))
-                mlflow.log_metric('precision', precision[-1], step=len(train_dataset))
-                f_score.append(2*(precision[-1]*recall[-1])/(precision[-1]+recall[-1]))
-                mlflow.log_metric('f_score', f_score[-1], step=len(train_dataset))
-                ber.append((false_positive/(false_positive+true_negative)+false_negative/(true_positive+false_negative))/2)
-                mlflow.log_metric('BER', ber[-1], step=len(train_dataset))
-                mlflow.log_metric('final_acc', acc[rd], step=len(train_dataset))
-                mlflow.log_metric('final_b_acc', b_acc[rd], step=len(train_dataset))
-                logging.info(f'binary test accuracy: {round(b_acc[rd]*100, 2)}')
-
+            dt.get_acc_on_set(test_dataset, self.classes, clf)
 
         print('Training Completed!')
-
-        torch.save(clf.state_dict(), self.log_path+'/weight.pth')
-        print('Model Saved!')
-
-        fig = plt.figure()
-        plt.plot(acc)
-        plt.title('accuracy')
-        plt.ylabel('test Accuracy')
-        plt.xlabel('Iteration')
-        plt.grid(True)
-        fig.savefig(self.log_path+'/acc.png')
-
-        with open(self.log_path+'/../../test.csv', mode='a') as f:
-            writer = csv.writer(f)
-            writer.writerow([self.cfg.train_parameters.seed])
-            writer.writerow(acc)
-        if self.cfg.dataset.name == 'GAPs' or self.cfg.dataset.name == 'KSDD2':
-            with open(self.log_path+'/../../ber.csv', mode='a') as f:
-                writer = csv.writer(f)
-                writer.writerow([self.cfg.train_parameters.seed])
-                writer.writerow(ber)
-            with open(self.log_path+'/../../f_score.csv', mode='a') as f:
-                writer = csv.writer(f)
-                writer.writerow([self.cfg.train_parameters.seed])
-                writer.writerow(f_score)
-            with open(self.log_path+'/../../precision.csv', mode='a') as f:
-                writer = csv.writer(f)
-                writer.writerow([self.cfg.train_parameters.seed])
-                writer.writerow(precision)
-            with open(self.log_path+'/../../recall.csv', mode='a') as f:
-                writer = csv.writer(f)
-                writer.writerow([self.cfg.train_parameters.seed])
-                writer.writerow(recall)
-            with open(self.log_path+'/../../binary_result.csv', mode='a') as f:
-                writer = csv.writer(f)
-                writer.writerow([self.cfg.train_parameters.seed])
-                writer.writerow(b_acc)
+        logger.show_result(self.cfg.train_parameters.seed)
                 
 # hydra
 @hydra.main(config_name='base', config_path='configs', version_base='1.1')

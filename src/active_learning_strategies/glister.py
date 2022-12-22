@@ -64,14 +64,13 @@ class GLISTER(Strategy):
         tensorization while honouring the resourse constraits. 
     """
     
-    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None, validation_dataset = None,
-                 typeOf = 'none', lam = None, kernel_batch_size = 200):
+    def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None,):
         super(GLISTER, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)
     
-        self.validation_dataset = validation_dataset
-        self.typeOf = typeOf
-        self.lam = lam
-        self.kernel_batch_size = kernel_batch_size
+        self.validation_dataset = None
+        self.typeOf = cfg.typeOf
+        self.lam = cfg.lam
+        self.kernel_batch_size = cfg.kernel_batch_size
 
     def distance(self, x, y, exp = 2):
 

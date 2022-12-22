@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
-
 sys.path.append('./')  
 
 class AddIndexDataset(Dataset):
@@ -46,12 +45,13 @@ class data_train:
     """
     
     
-    def __init__(self, training_dataset, net, cfg, dataset_cfg):
+    def __init__(self, training_dataset, net, cfg, dataset_cfg, logger):
 
         self.training_dataset = AddIndexDataset(training_dataset)
         self.net = net
         self.cfg = cfg
         self.dataset_cfg = dataset_cfg
+        self.logger = logger
         
         self.n_pool = len(training_dataset)
         
@@ -61,57 +61,6 @@ class data_train:
         self.idxs_lb = idxs_lb
 
     def get_acc_on_set(self, test_dataset, classes, clf):
-        
-        """
-        Calculates and returns the accuracy on the given dataset to test
-        
-        Parameters
-        ----------
-        test_dataset: torch.utils.data.Dataset
-            The dataset to test
-        classes: list
-            The list of each class name
-        clf: torch.nn.Module
-            Model
-        Returns
-        -------
-        accFinal: float
-            The fraction of data points whose predictions by the current model match their targets
-        class_correct: list
-            The list of correct numbers of each class
-        class_total: list
-            The list of total numbers of each class
-        """	
-        
-        self.clf = clf
-
-        if test_dataset is None:
-            raise ValueError("Test data not present")
-        
-        loader_te = DataLoader(test_dataset, shuffle=False, pin_memory=True, batch_size=self.cfg.batch_size, num_workers=8)
-        self.clf.eval()
-
-        class_correct = [0.]*len(classes)
-        class_total = [0.]*len(classes)
-        loop = tqdm(loader_te, unit='batch', desc='| Test |', dynamic_ncols=True)
-
-        with torch.no_grad():
-            self.clf = self.clf.to(self.device)
-            for _, (x,y) in enumerate(loop): 
-                x, y = x.to(device=self.device), y.to(device=self.device)
-                outputs = self.clf(x)
-                _, predicted = torch.max(outputs, 1)
-                c = (predicted == y)
-                # Get acc of each class (for imbalanced data analysis)
-                for i in range(len(y)):
-                    label = y[i]
-                    class_correct[label] += c[i].item()
-                    class_total[label] += 1
-        accFinal = sum(class_correct) / sum(class_total)
-
-        return accFinal, class_correct, class_total
-
-    def get_binary_acc_on_set(self, test_dataset, classes, clf):
   
         """
         Calculates and returns the accuracy on the given dataset to test
@@ -133,67 +82,48 @@ class data_train:
         class_total: list
             The list of total numbers of each class
         """	
-        
-        self.clf = clf
-
-        if test_dataset is None:
-            raise ValueError("Test data not present")
-        
+        if 'IntactRoad' in classes:
+            ok_idx = 3
+        elif 'OK' in classes:
+            ok_idx = 1
+        else:
+            ok_idx = None
+        self.clf = clf.eval().to(device=self.device)
         loader_te = DataLoader(test_dataset, shuffle=False, pin_memory=True, batch_size=self.cfg.batch_size, num_workers=8)
-        self.clf.eval()
-
-        binary_correct = [0.]*2
-        binary_total = [0.]*2
-        class_correct = [0.]*len(classes)
-        class_total = [0.]*len(classes)
         loop = tqdm(loader_te, unit='batch', desc='| Test |', dynamic_ncols=True)
 
+        binary_correct = [0.]*2; binary_total = [0.]*2
+        class_correct = [0.]*len(classes); class_total = [0.]*len(classes)
+
         with torch.no_grad():
-            self.clf = self.clf.to(self.device)
             for _, (x,y) in enumerate(loop): 
                 x, y = x.to(device=self.device), y.to(device=self.device)
                 outputs = self.clf(x)
                 _, predicted = torch.max(outputs, 1)
                 c = (predicted == y)
-                # GAPs
-                if len(classes)>2:
+                if ok_idx==None:
+                    for i in range(len(y)):
+                        label = y[i]
+                        class_correct[label] += c[i].item()
+                        class_total[label] += 1
+                else:
                     for i in range(len(y)):
                         # OK data
-                        if y[i]==3:
-                            if predicted[i]==3:
+                        if y[i]==ok_idx:
+                            if predicted[i]==ok_idx:
                                 binary_correct[0] += 1
                             binary_total[0] += 1
                         # NG data
                         else:
-                            if not predicted[i]==3:
+                            if not predicted[i]==ok_idx:
                                 binary_correct[1] += 1
                             binary_total[1] += 1
                         # acc on each class
                         label = y[i]
                         class_correct[label] += c[i].item()
                         class_total[label] += 1
-                # KSDD2
-                else:
-                    for i in range(len(y)):
-                        if y[i]==1:
-                            if predicted[i]==1:
-                                binary_correct[0] += 1
-                            binary_total[0] += 1
-                        else:
-                            if predicted[i]==0:
-                                binary_correct[1] += 1
-                            binary_total[1] += 1
-                        label = y[i]
-                        class_correct[label] += c[i].item()
-                        class_total[label] += 1
 
-                    
-
-        accFinal = sum(class_correct) / sum(class_total)
-        binary_accFinal = sum(binary_correct) / sum(binary_total)
-        del loader_te, loop, outputs, predicted
-        return accFinal, class_correct, class_total, binary_accFinal, binary_correct, binary_total
-
+        self.logger.write_test_log(class_correct, class_total, binary_correct, binary_total)
 
     def _train(self, epoch, loader_tr, optimizer, criterion, scaler):
         accFinal = 0.
@@ -213,12 +143,12 @@ class data_train:
             scaler.update()
             lossFinal += loss.item()
 
-        self.acc.append(accFinal/len(loader_tr.dataset))
-        self.loss.append(lossFinal/len(loader_tr.dataset))
-        print('Epoch:' + str(epoch) + '- training accuracy:'+str(self.acc[-1])+'- training loss:'+str(self.loss[-1]))
+        self.logger.train_acc.append(accFinal/len(loader_tr.dataset))
+        self.logger.train_loss.append(lossFinal/len(loader_tr.dataset))
+        print('Epoch:' + str(epoch) + '- training accuracy:'+str(self.logger.train_acc[-1])+'- training loss:'+str(self.logger.train_loss[-1]))
 
 
-    def train(self, classes, rd, log_path):
+    def train(self, classes):
 
         """
         Initiates the training loop.
@@ -227,10 +157,6 @@ class data_train:
         ----------
         classes: list
             The list of each class name
-        rd: int
-            Current round
-        log_path: str
-            path for log file
         """        
 
         self.acc = []
@@ -269,39 +195,22 @@ class data_train:
 
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
         lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epoch)
+        
+        # Make histgram of queried data
+        self.logger.get_hist(self.training_dataset, classes)
 
         # Set shuffle to true to encourage stochastic behavior for SGD
         loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=8)
-        epoch = 1
-        
-        # Make histgram of queried data
-        hist = [0]*len(classes)
-        os.makedirs(os.path.join(log_path, 'hist'), exist_ok=True)
-        for _, (_, y, _) in enumerate(loader_tr):
-            for i in y:
-                hist[i] += 1
-        fig = plt.figure()
-        plt.bar(classes, hist, width=0.9)
-        plt.xlabel('classes')
-        plt.ylabel('number of queried data')
-        fig.savefig(os.path.join(log_path, 'hist', str(rd)+'.png'))
-        plt.close()
-
-        self.clf.train()
         criterion = nn.CrossEntropyLoss()
         scaler = torch.cuda.amp.GradScaler()
 
+        self.clf.train()
         for epoch in range(n_epoch):
             self._train(epoch, loader_tr, optimizer, criterion, scaler)
             lr_sched.step()
-            epoch += 1
 
-        for i in range(n_epoch):
-            mlflow.log_metric('acc', self.acc[i])
-            mlflow.log_metric('loss', self.loss[i])
-            logging.info('Epoch:' + str(i) + '- training accuracy:'+str(self.acc[i])+'- training loss:'+str(self.loss[i]))
-
-        torch.save(self.clf.module.state_dict(), log_path+'/weight'+str(rd)+'.pth')
+        self.logger.write_train_log()
+        self.logger.save_weight(self.clf)
 
 
     def ddp_train(self, rank, classes, rd, log_path):
@@ -351,38 +260,19 @@ class data_train:
 
         # Set shuffle to true to encourage stochastic behavior for SGD
         loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, pin_memory=True, num_workers=8, sampler=sampler)
-        
+        criterion = nn.CrossEntropyLoss()
+        scaler = torch.cuda.amp.GradScaler()
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
         lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(loader_tr)*n_epoch/torch.cuda.device_count())
         
-        # histgram of queried data
         if rank==0:
-            hist = [0]*len(classes)
-            os.makedirs(os.path.join(log_path, 'hist'), exist_ok=True)
-            for _, (_, y, _) in enumerate(loader_tr):
-                for i in y:
-                    hist[i] += 1
-            fig = plt.figure()
-            plt.bar(classes, hist, width=0.9)
-            plt.xlabel('classes')
-            plt.ylabel('number of queried data')
-            fig.savefig(os.path.join(log_path, 'hist', str(rd)+'.png'))
-        
-        epoch = 1
-        
+            self.logger.get_hist(self.training_dataset, classes)
+            
         dist.barrier()
-
-        while epoch <= n_epoch: 
-
-            self._train(loader_tr, optimizer)
-
+        for epoch in range(n_epoch):
+            self._train(epoch, loader_tr, optimizer, criterion, scaler)
             lr_sched.step()
             
-            epoch += 1
-        
         if rank==0:
-            for i in range(n_epoch):
-                mlflow.log_metric('acc', self.acc[i])
-                mlflow.log_metric('loss', self.loss[i])
-                logging.info('Epoch:' + str(i) + '- training accuracy:'+str(self.acc[i])+'- training loss:'+str(self.loss[i]))
-            torch.save(self.clf.module.state_dict(), log_path+'/weight'+str(rd)+'.pth')
+            self.logger.write_train_log()
+            self.logger.save_weight(self.clf)
