@@ -16,7 +16,7 @@ if os.path.exists('../downloaded_data/GAPs/v2/ZEB_50k_64'):
     pass
 else:
     os.makedirs('../downloaded_data/GAPs', exist_ok=True)
-    gaps.download(login='gapsro2s;i2A*7',
+    gaps.download(login='your own ID',
                 output_dir='../downloaded_data/GAPs', 
                 version=2,
                 patchsize=224, 

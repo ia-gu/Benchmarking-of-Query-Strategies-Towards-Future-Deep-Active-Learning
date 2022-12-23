@@ -28,7 +28,7 @@ Some of the algorithms currently implemented here include the following:
 
 If you want to know the detail of each implementations, refer original paper or [ours]().
 
-SSL implemented here is [SimSiam](https://github.com/facebookresearch/simsiam). This is based on the idea from [here](https://arxiv.org/abs/2011.10566)
+We use [SimSiam](https://github.com/facebookresearch/simsiam) as the SSL pretraining task. This is based on the idea from [here](https://arxiv.org/abs/2011.10566)
 
 You can get compared dataset from below: 
 
@@ -39,13 +39,19 @@ You can get compared dataset from below:
 - [GAPs](https://www.tu-ilmenau.de/universitaet/fakultaeten/fakultaet-informatik-und-automatisierung/profil/institute-und-fachgebiete/institut-fuer-technische-informatik-und-ingenieurinformatik/fachgebiet-neuroinformatik-und-kognitive-robotik/data-sets-code/german-asphalt-pavement-distress-dataset-gaps)
 - [KSDD2](https://www.vicos.si/resources/kolektorsdd2/)
 
+In EuroSAT, we split data to train/test = 22,000/5,000. The list we used is in ```materials/eurosat_ids.txt```.
+
 We experiment with 5000 images on OCT, because it is too easy to compare the algorithms.
-The list we used is in ```oct_ids.txt```.
+The list we used is in ```materials/oct_ids.txt```.
 
-Official KSDD2 dataset is for segmentation task, so there is no annotation to (OK/NG) on test set.
-Thus, We annotate them and the list of NG data ids are in ```ksdd2.csv```.
+BrainTumor dataset is given as MATLAB style, so use ```materials/get_brain_data.py``` to get Image data.
 
-The repository is forked from [distil](https://github.com/decile-team/distil)
+GAPs dataset is given as NPY style, so use ```materials/get_gaps.py``` to get Image data. You need to get a login ID(please refer the official page).
+
+KSDD2 dataset is for segmentation task, so there is no annotation to (OK/NG) on test set.
+Thus, We annotate them and the list of NG data ids are in ```materials/ksdd2.csv```.
+
+Finally, this repository is based on [distil](https://github.com/decile-team/distil)
 
 
 
@@ -87,7 +93,6 @@ Implement below for SSL
 ```python main_simsiam.py```
 
 ## Some more details
-```get_brain_data.py``` and ```get_gaps.py``` is made because we need image data when we implement SimSiam.
 
 We prepare two types of ResNet18. One is the original model given by distil, other is from [here](https://github.com/kuangliu/pytorch-cifar).
 This model is for CIFAR dataset because the size of CIFAR images is *32×32*, *7×7* carnel of original model is too big.
