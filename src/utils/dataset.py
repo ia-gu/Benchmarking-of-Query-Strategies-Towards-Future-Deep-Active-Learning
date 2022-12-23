@@ -6,7 +6,7 @@ def get_data(data_cfg):
     model_name = 'resnet'
     channels = 1
     # download_path needs to be modified
-    # data_path also needs to be modified
+    # *_data_path also needs to be modified
     if data_cfg.name == 'CIFAR10':
         model_name = 'modified_resnet'
         channels = 3

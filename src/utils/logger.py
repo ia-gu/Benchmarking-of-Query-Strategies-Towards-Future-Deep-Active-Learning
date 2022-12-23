@@ -49,6 +49,7 @@ class Logger():
 
     def write_test_log(self, class_correct, class_total, binary_correct, binary_total):
         self.test_acc.append(sum(class_correct)/sum(class_total))
+
         if sum(binary_total) > 1:
             self.test_binary_acc.append(sum(binary_correct)/sum(binary_total))
             binary_classes = ('NG' 'OK')
@@ -79,25 +80,20 @@ class Logger():
             writer = csv.writer(f)
             writer.writerow([seed])
             writer.writerow(self.test_acc)
-            f.close()
         if len(self.f_score)>1:
             with open(self.log_path+'/../../f_score.csv', mode='a') as f:
                 writer = csv.writer(f)
                 writer.writerow([seed])
                 writer.writerow(self.f_score)
-                f.close()
             with open(self.log_path+'/../../precision.csv', mode='a') as f:
                 writer = csv.writer(f)
                 writer.writerow([seed])
                 writer.writerow(self.precision)
-                f.close()
             with open(self.log_path+'/../../recall.csv', mode='a') as f:
                 writer = csv.writer(f)
                 writer.writerow([seed])
                 writer.writerow(self.recall)
-                f.close()
             with open(self.log_path+'/../../binary_result.csv', mode='a') as f:
                 writer = csv.writer(f)
                 writer.writerow([seed])
                 writer.writerow(self.test_binary_acc)
-                f.close()

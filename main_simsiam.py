@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates.
-# All rights reserved.
-
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
 import os
 import random
 import mlflow
@@ -23,7 +16,6 @@ from src.simsiam.utils.utils import adjust_learning_rate, save_checkpoint
 from src.utils.models.resnet import OriginalResNet
 from src.utils.models.resnet import ResNet18
 
-# introduce hydra, mlflow for logging tool
 @hydra.main(config_name='ssl_config', config_path='configs', version_base='1.1')
 def main(cfg : DictConfig):
         mlflow.set_tracking_uri('file://' + hydra.utils.get_original_cwd() + '/mlruns')
@@ -56,14 +48,12 @@ def main_worker(device, gpu_ids, cfg):
     # model
     model = builder.SimSiam(ResNet18, cfg.train_parameters.dim, cfg.train_parameters.pred_dim) if cfg.dataset.name == 'CIFAR10' \
     else    builder.SimSiam(OriginalResNet, cfg.train_parameters.dim, cfg.train_parameters.pred_dim)
+    
+    # resume pretraining
     if cfg.train_parameters.start_epoch > 0:
         model.load_state_dict(torch.load('weights/'+cfg.dataset.name+'/'+str(cfg.train_parameters.seed)+'/checkpoint.pth.tar')['state_dict'])
     model = torch.nn.DataParallel(model, device_ids=gpu_ids)
     model.to(device)
-
-
-    # loss
-    criterion = nn.CosineSimilarity(dim=1).to(device)
 
     # learning rate setting
     init_lr = cfg.train_parameters.lr * cfg.train_parameters.batch_size / 256
@@ -73,24 +63,19 @@ def main_worker(device, gpu_ids, cfg):
     else:
         optim_params = model.parameters()
     
-    # optimizer
     optimizer = torch.optim.SGD(optim_params, init_lr, momentum=0.9, weight_decay=1e-4)
-    print(optimizer)
-
-    # dataloader
     train_loader = get_dataloader(cfg)
+    criterion = nn.CosineSimilarity(dim=1).to(device)
 
+    # train
     for epoch in range(cfg.train_parameters.start_epoch, cfg.train_parameters.n_epoch):
         print('adjust_learning_rate')
         adjust_learning_rate(optimizer, init_lr, epoch, cfg)
 
-        # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch, device)
 
-        save_checkpoint({
-            'state_dict': model.module.state_dict(),
-            'optimizer' : optimizer.state_dict(),
-        }, is_best=False, filename='weights/'+cfg.dataset.name+'/'+str(cfg.train_parameters.seed)+'/checkpoint.pth.tar')
+        save_checkpoint({'state_dict': model.module.state_dict(), 'optimizer' : optimizer.state_dict(),}, 
+                          is_best=False, filename='weights/'+cfg.dataset.name+'/'+str(cfg.train_parameters.seed)+'/checkpoint')
 
 if __name__ == '__main__':
 

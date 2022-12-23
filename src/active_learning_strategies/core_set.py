@@ -39,7 +39,7 @@ class CoreSet(Strategy):
         min_dist = torch.min(dist_ctr, dim=1)[0]
                 
         idxs = []
-        for i in range(n):
+        for _ in range(n):
             idx = torch.argmax(min_dist)
             # to avoid uerying the same sample repeatedly
             min_dist[idx] = -np.inf

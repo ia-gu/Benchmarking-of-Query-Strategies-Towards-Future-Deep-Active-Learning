@@ -1,5 +1,4 @@
 from sklearn.cluster import AgglomerativeClustering
-from scipy.cluster.hierarchy import linkage
 import numpy as np
 import random
 
@@ -12,6 +11,7 @@ class ClusterMarginSampling(Strategy):
     """
     Implements Cluster Margin Sampling from the paper: Batch Active Learning at Scale
     Cluster Margin Sampling works even large batch size.
+    
 
     Parameters
     ----------
@@ -76,6 +76,7 @@ class ClusterMarginSampling(Strategy):
         # Sort data based on margin metric
         batch_scores = sorted(batch_scores, key=lambda x: x[0])
 
+        # select clusters including low margin score sample
         selected_cluster = []
         for i in range(len(batch_scores)):
             cluster_id = self.clustered_features.labels_[batch_scores[i][1]]
@@ -92,7 +93,7 @@ class ClusterMarginSampling(Strategy):
                     sorted_cluster_ids.append(j)
                     break
 
-        # sampling
+        # Content is randomized, so do random sampling from each cluster
         selected_ids = []
         while evaluated_points < budget:
             for i in sorted_cluster_ids:

@@ -1,8 +1,4 @@
-import os
-import matplotlib.pyplot as plt
 import sys
-import logging
-import mlflow
 
 import torch
 import torch.nn as nn
@@ -26,7 +22,6 @@ class AddIndexDataset(Dataset):
     def __len__(self):
         return len(self.wrapped_dataset)
 
-#custom training
 class data_train:
 
     """
@@ -42,6 +37,8 @@ class data_train:
         Additional arguments to control the training loop
     dataset_cfg: DictConfig
         use for ssl section
+    logger: Logger
+        logging manager
     """
     
     
@@ -52,9 +49,7 @@ class data_train:
         self.cfg = cfg
         self.dataset_cfg = dataset_cfg
         self.logger = logger
-        
         self.n_pool = len(training_dataset)
-        
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def update_index(self, idxs_lb):
@@ -73,15 +68,9 @@ class data_train:
             The list of each class name
         clf: torch.nn.Module
             Model
-        Returns
-        -------
-        accFinal: float
-            The fraction of data points whose predictions by the current model match their targets
-        class_correct: list
-            The list of correct numbers of each class
-        class_total: list
-            The list of total numbers of each class
         """	
+        
+        # If the dataset is visual inspection, calcurate binary metric
         if 'IntactRoad' in classes:
             ok_idx = 3
         elif 'OK' in classes:
@@ -103,9 +92,8 @@ class data_train:
                 c = (predicted == y)
                 if ok_idx==None:
                     for i in range(len(y)):
-                        label = y[i]
-                        class_correct[label] += c[i].item()
-                        class_total[label] += 1
+                        class_correct[y[i]] += c[i].item()
+                        class_total[y[i]] += 1
                 else:
                     for i in range(len(y)):
                         # OK data
@@ -119,11 +107,11 @@ class data_train:
                                 binary_correct[1] += 1
                             binary_total[1] += 1
                         # acc on each class
-                        label = y[i]
-                        class_correct[label] += c[i].item()
-                        class_total[label] += 1
+                        class_correct[y[i]] += c[i].item()
+                        class_total[y[i]] += 1
 
         self.logger.write_test_log(class_correct, class_total, binary_correct, binary_total)
+
 
     def _train(self, epoch, loader_tr, optimizer, criterion, scaler):
         accFinal = 0.
@@ -159,14 +147,14 @@ class data_train:
             The list of each class name
         """        
 
-        self.acc = []
-        self.loss = []
-
         print('Training..')
+
+        # Make histgram of queried data
+        self.logger.get_hist(self.training_dataset, classes)
+
         def weight_reset(m):
             if hasattr(m, 'reset_parameters'):
                 m.reset_parameters()
-        n_epoch = self.cfg.n_epoch
 
         if self.cfg.isreset:
             if self.cfg.ssl:
@@ -189,23 +177,16 @@ class data_train:
         self.net = torch.nn.DataParallel(self.net, device_ids=device_ids)
         self.clf = self.net.to(device=self.device)
 
-        # batch size for each gpu
         batch_size = self.cfg.batch_size
         batch_size *= len(device_ids)
-
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
-        lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epoch)
-        
-        # Make histgram of queried data
-        self.logger.get_hist(self.training_dataset, classes)
-
-        # Set shuffle to true to encourage stochastic behavior for SGD
+        lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.cfg.n_epoch)
         loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=8)
         criterion = nn.CrossEntropyLoss()
         scaler = torch.cuda.amp.GradScaler()
 
         self.clf.train()
-        for epoch in range(n_epoch):
+        for epoch in range(self.cfg.n_epoch):
             self._train(epoch, loader_tr, optimizer, criterion, scaler)
             lr_sched.step()
 
@@ -213,7 +194,7 @@ class data_train:
         self.logger.save_weight(self.clf)
 
 
-    def ddp_train(self, rank, classes, rd, log_path):
+    def ddp_train(self, rank, classes):
 
         """
         Initiates the training loop.
@@ -226,12 +207,11 @@ class data_train:
 
         if rank==0:
             print('Training..')
+            self.logger.get_hist(self.training_dataset, classes)
         self.device = rank
-
         def weight_reset(m):
             if hasattr(m, 'reset_parameters'):
                 m.reset_parameters()
-        n_epoch = self.cfg.n_epoch
 
         if self.cfg.isreset:
             if self.cfg.ssl:
@@ -254,22 +234,16 @@ class data_train:
         self.clf = torch.nn.parallel.DistributedDataParallel(self.net, device_ids=[rank], find_unused_parameters=True)
         sampler = DistributedSampler(self.training_dataset, num_replicas=torch.cuda.device_count(), rank=rank, shuffle=True)
 
-        # batch size for each gpu
         batch_size = self.cfg.batch_size
         batch_size *= torch.cuda.device_count()
-
-        # Set shuffle to true to encourage stochastic behavior for SGD
         loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, pin_memory=True, num_workers=8, sampler=sampler)
         criterion = nn.CrossEntropyLoss()
         scaler = torch.cuda.amp.GradScaler()
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
-        lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(loader_tr)*n_epoch/torch.cuda.device_count())
+        lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(loader_tr)*self.cfg.n_epoch/torch.cuda.device_count())
         
-        if rank==0:
-            self.logger.get_hist(self.training_dataset, classes)
-            
         dist.barrier()
-        for epoch in range(n_epoch):
+        for epoch in range(self.cfg.n_epoch):
             self._train(epoch, loader_tr, optimizer, criterion, scaler)
             lr_sched.step()
             

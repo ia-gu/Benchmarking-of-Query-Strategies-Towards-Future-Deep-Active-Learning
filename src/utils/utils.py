@@ -67,7 +67,7 @@ class LabeledToUnlabeledDataset(Dataset):
         self.wrapped_dataset = wrapped_dataset
 
     def __getitem__(self, index):
-        data, label = self.wrapped_dataset[index]
+        data, _ = self.wrapped_dataset[index]
         return data
 
     def __len__(self):

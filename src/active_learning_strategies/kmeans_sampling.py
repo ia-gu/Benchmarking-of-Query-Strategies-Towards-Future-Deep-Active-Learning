@@ -34,13 +34,13 @@ class KMeansSampling(Strategy):
         embeddings = self.get_embedding(self.unlabeled_dataset)
         embeddings = embeddings.to('cpu').detach().numpy().copy()
         
-
+        # clustering
         cluster_learner = KMeans(n_clusters=budget)
         cluster_learner.fit(embeddings)
         
+        # get cluster center and the nearest points
         cluster_idxs = cluster_learner.predict(embeddings)
         centers = cluster_learner.cluster_centers_[cluster_idxs]
-
         dis = (embeddings - centers)**2
         dis = dis.sum(axis=1)
 

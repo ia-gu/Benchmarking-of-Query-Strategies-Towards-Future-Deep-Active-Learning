@@ -14,7 +14,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
     model.train()
     scaler = torch.cuda.amp.GradScaler()
     loop = tqdm(train_loader, unit='batch', desc='| Pretrain |', dynamic_ncols=True)
-    for i, (images, _) in enumerate(loop):
+    for _, (images, _) in enumerate(loop):
         image0 = images[0].to(device, non_blocking=True)
         image1 = images[1].to(device, non_blocking=True)
 

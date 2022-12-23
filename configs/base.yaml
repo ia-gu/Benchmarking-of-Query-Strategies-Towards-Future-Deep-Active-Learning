@@ -1,5 +1,3 @@
-# @package _group_
-
 mlflow_runname: base
 
 train_parameters: 

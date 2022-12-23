@@ -69,7 +69,6 @@ class AdversarialDeepFool(Strategy):
 
         x = Variable(pert_image[None, :], requires_grad=True)
         fs = net.forward(x)
-        fs_list = [fs[0,I[k]] for k in range(num_classes)]
         k_i = label
 
         while k_i == label and loop_i < self.max_iter:

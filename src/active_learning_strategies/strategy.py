@@ -48,7 +48,7 @@ class Strategy:
         loop = tqdm(to_predict_dataloader, unit='batch', desc='| Prediction |', dynamic_ncols=True)
         
         with torch.no_grad():
-            for batch_idx, elements_to_predict in enumerate(loop):
+            for _, elements_to_predict in enumerate(loop):
                 
                 # Predict the most likely class
                 elements_to_predict = elements_to_predict.to(self.device)
@@ -79,7 +79,7 @@ class Strategy:
         evaluated_instances = 0
         
         with torch.no_grad():
-            for batch_idx, elements_to_predict in enumerate(loop):
+            for _, elements_to_predict in enumerate(loop):
                 
                 # Calculate softmax (probabilities) of predictions
                 if type(elements_to_predict)==list:
@@ -111,10 +111,10 @@ class Strategy:
         
         with torch.no_grad():
             # Repeat n_drop number of times to obtain n_drop dropout samples per data instance
-            for i in range(n_drop):
+            for _ in range(n_drop):
                 loop = tqdm(to_predict_dataloader, unit='batch', desc='| Dropout |', dynamic_ncols=True)
                 evaluated_instances = 0
-                for batch_idx, elements_to_predict in enumerate(loop):
+                for _, elements_to_predict in enumerate(loop):
                 
                     # Calculate softmax (probabilities) of predictions
                     elements_to_predict = elements_to_predict.to(self.device)
@@ -151,7 +151,7 @@ class Strategy:
                 loop = tqdm(to_predict_dataloader, unit='batch', desc='| Dropout Split |', dynamic_ncols=True)
                 
                 evaluated_instances = 0
-                for batch_idx, elements_to_predict in enumerate(loop):
+                for _, elements_to_predict in enumerate(loop):
                 
                     # Calculate softmax (probabilities) of predictions
                     elements_to_predict = elements_to_predict.to(self.device)
@@ -183,11 +183,11 @@ class Strategy:
         
         with torch.no_grad():
 
-            for batch_idx, elements_to_predict in enumerate(loop):
+            for _, elements_to_predict in enumerate(loop):
                 
                 # Calculate softmax (probabilities) of predictions
                 elements_to_predict = elements_to_predict.to(self.device)
-                out, l1 = self.model(elements_to_predict, last=True)
+                _, l1 = self.model(elements_to_predict, last=True)
                 
                 # Insert the calculated batch of probabilities into the tensor to return
                 start_slice = evaluated_instances
@@ -223,7 +223,7 @@ class Strategy:
         
         # If labels need to be predicted, then do so. Calculate output as normal.
         if predict_labels:
-            for batch_idx, unlabeled_data_batch in enumerate(loop):
+            for _, unlabeled_data_batch in enumerate(loop):
                 start_slice = evaluated_instances
                 end_slice = start_slice + unlabeled_data_batch.shape[0]
                 
@@ -254,7 +254,7 @@ class Strategy:
                 torch.cuda.empty_cache()
         else:
         
-            for batch_idx, (inputs, targets) in enumerate(loop):
+            for _, (inputs, targets) in enumerate(loop):
                 start_slice = evaluated_instances
                 end_slice = start_slice + inputs.shape[0]
                 inputs, targets = inputs.to(self.device, non_blocking=True), targets.to(self.device, non_blocking=True)
@@ -295,7 +295,6 @@ class Strategy:
         for name, layer in self.model._modules.items():
             if name == layer_name:
                 layer.register_forward_hook(get_features(layer_name))
-        output = self.model(inp)
         return torch.squeeze(feature[layer_name])
 
     def get_feature_embedding(self, dataset, unlabeled, layer_name='avgpool'):
@@ -304,12 +303,12 @@ class Strategy:
 
         features = []
         if(unlabeled):
-            for batch_idx, inputs in enumerate(loop):
+            for _, inputs in enumerate(loop):
                 inputs = inputs.to(self.device)
                 batch_features = self.feature_extraction(inputs, layer_name)
                 features.append(batch_features)
         else:
-            for batch_idx, (inputs,_) in enumerate(loop):
+            for _, (inputs,_) in enumerate(loop):
                 inputs = inputs.to(self.device)
                 batch_features = self.feature_extraction(inputs, layer_name)
                 features.append(batch_features)
