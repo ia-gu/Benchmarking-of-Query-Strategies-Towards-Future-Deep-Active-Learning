@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from .strategy import Strategy
@@ -40,13 +41,14 @@ class CoreSet(Strategy):
         idxs = []
         for i in range(n):
             idx = torch.argmax(min_dist)
+            # to avoid uerying the same sample repeatedly
+            min_dist[idx] = -np.inf
             idxs.append(idx.item())
             dist_new_ctr = torch.cdist(unlabeled_embeddings, unlabeled_embeddings[[idx],:])
 
             min_dist = torch.minimum(min_dist, dist_new_ctr[:,0])
-
         return idxs
-  
+
     def select(self, budget):
         
         """
@@ -78,6 +80,6 @@ class CoreSet(Strategy):
         self.model.eval()
         embedding_unlabeled = self.get_embedding(self.unlabeled_dataset)
         embedding_labeled = self.get_embedding(NoLabelDataset(self.labeled_dataset))
-        chosen = self.furthest_first(embedding_unlabeled, embedding_labeled, budget)
+        idxs = self.furthest_first(embedding_unlabeled, embedding_labeled, budget)
 
-        return chosen        
+        return idxs

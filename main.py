@@ -56,7 +56,7 @@ class TrainClassifier:
         unlabeled_dataset = Subset(full_train_dataset, list(set(range(len(full_train_dataset))) -  set(start_idxs)))
         strategy = get_strategy(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, len(self.classes), self.cfg.al_method)
         
-        logging.info('#########################\nround0\n#########################')
+        logging.info('#########################round0#########################')
         dt = data_train(train_dataset, net, self.cfg.train_parameters, self.cfg.dataset, logger)
 
         # Use DDP when your dataset is ImageNet and use multi-GPU
@@ -74,7 +74,7 @@ class TrainClassifier:
         dt.get_acc_on_set(test_dataset, self.classes, clf)
 
         for rd in range(1, self.cfg.dataset.rounds):
-            logging.info(f'#########################\nround{rd}\n#########################')
+            logging.info(f'#########################round{rd}#########################')
             logger.rd = rd
             gc.collect()
 
