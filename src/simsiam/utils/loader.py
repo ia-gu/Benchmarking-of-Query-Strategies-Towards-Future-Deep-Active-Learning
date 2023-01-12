@@ -56,7 +56,7 @@ def get_dataloader(cfg):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
-        traindir = '/data/dataset/eurosat/2750'
+        traindir = '/data/dataset/eurosat/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             TwoCropsTransform(transforms.Compose(augmentation)))

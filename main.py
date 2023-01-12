@@ -22,7 +22,7 @@ from src.utils.train_helper import data_train
 from src.utils.utils import LabeledToUnlabeledDataset
 
 class TrainClassifier:
-	
+
     def __init__(self, cfg, log_path,):
         self.cfg = cfg
         self.log_path = log_path
@@ -47,7 +47,7 @@ class TrainClassifier:
         torch.cuda.manual_seed_all(random_seed)
         torch.backends.cudnn.deterministic = True
         torch.use_deterministic_algorithms = True
-        
+
         logger = Logger(self.log_path)
         full_train_dataset, test_dataset, self.model_name, self.channels, self.classes = get_data(self.cfg.dataset)
         net = self.getModel()
@@ -55,7 +55,7 @@ class TrainClassifier:
         train_dataset = Subset(full_train_dataset, start_idxs)
         unlabeled_dataset = Subset(full_train_dataset, list(set(range(len(full_train_dataset))) -  set(start_idxs)))
         strategy = get_strategy(train_dataset, LabeledToUnlabeledDataset(unlabeled_dataset), net, len(self.classes), self.cfg.al_method)
-        
+
         logging.info('#########################round0#########################')
         dt = data_train(train_dataset, net, self.cfg.train_parameters, self.cfg.dataset, logger)
 
@@ -100,7 +100,7 @@ class TrainClassifier:
 
         print('Training Completed!')
         logger.show_result(self.cfg.train_parameters.seed)
-                
+
 @hydra.main(config_name='base', config_path='configs', version_base='1.1')
 def main(cfg : DictConfig):
     mlflow.set_tracking_uri('file://' + hydra.utils.get_original_cwd() + '/mlruns')

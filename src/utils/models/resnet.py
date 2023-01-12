@@ -72,7 +72,7 @@ class ModifiedResNet(nn.Module):
         super(ModifiedResNet, self).__init__()
         self.in_planes = 64
         self.embDim = 8 * self.in_planes * block.expansion
-        
+
         self.conv1 = nn.Conv2d(channels, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)

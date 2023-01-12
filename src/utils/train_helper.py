@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
-sys.path.append('./')  
+sys.path.append('./')
 
 class AddIndexDataset(Dataset):
     
@@ -85,7 +85,7 @@ class data_train:
         class_correct = [0.]*len(classes); class_total = [0.]*len(classes)
 
         with torch.no_grad():
-            for _, (x,y) in enumerate(loop): 
+            for _, (x,y) in enumerate(loop):
                 x, y = x.to(device=self.device), y.to(device=self.device)
                 outputs = self.clf(x)
                 _, predicted = torch.max(outputs, 1)
@@ -145,7 +145,7 @@ class data_train:
         ----------
         classes: list
             The list of each class name
-        """        
+        """
 
         print('Training..')
 
@@ -174,6 +174,7 @@ class data_train:
         device_ids = []
         for i in range(torch.cuda.device_count()):
             device_ids.append(i)
+        print(f'use {len(device_ids)} gpus')
         self.net = torch.nn.DataParallel(self.net, device_ids=device_ids)
         self.clf = self.net.to(device=self.device)
 
@@ -241,12 +242,12 @@ class data_train:
         scaler = torch.cuda.amp.GradScaler()
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
         lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(loader_tr)*self.cfg.n_epoch/torch.cuda.device_count())
-        
+
         dist.barrier()
         for epoch in range(self.cfg.n_epoch):
             self._train(epoch, loader_tr, optimizer, criterion, scaler)
             lr_sched.step()
-            
+
         if rank==0:
             self.logger.write_train_log()
             self.logger.save_weight(self.clf)
