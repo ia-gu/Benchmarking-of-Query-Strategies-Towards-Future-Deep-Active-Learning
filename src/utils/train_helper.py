@@ -1,3 +1,4 @@
+import os
 import sys
 
 import torch
@@ -11,14 +12,14 @@ from tqdm import tqdm
 sys.path.append('./')
 
 class AddIndexDataset(Dataset):
-    
+
     def __init__(self, wrapped_dataset):
         self.wrapped_dataset = wrapped_dataset
-        
+
     def __getitem__(self, index):
         data, label = self.wrapped_dataset[index]
         return data, label, index
-    
+
     def __len__(self):
         return len(self.wrapped_dataset)
 
@@ -26,7 +27,7 @@ class data_train:
 
     """
     Provides a configurable training loop for AL.
-    
+
     Parameters
     ----------
     training_dataset: torch.utils.data.Dataset
@@ -40,8 +41,8 @@ class data_train:
     logger: Logger
         logging manager
     """
-    
-    
+
+
     def __init__(self, training_dataset, net, cfg, dataset_cfg, logger):
 
         self.training_dataset = AddIndexDataset(training_dataset)
@@ -56,10 +57,10 @@ class data_train:
         self.idxs_lb = idxs_lb
 
     def get_acc_on_set(self, test_dataset, classes, clf):
-  
+
         """
         Calculates and returns the accuracy on the given dataset to test
-        
+
         Parameters
         ----------
         test_dataset: torch.utils.data.Dataset
@@ -68,8 +69,8 @@ class data_train:
             The list of each class name
         clf: torch.nn.Module
             Model
-        """	
-        
+        """
+
         # If the dataset is visual inspection, calcurate binary metric
         if 'IntactRoad' in classes:
             ok_idx = 3
@@ -78,7 +79,7 @@ class data_train:
         else:
             ok_idx = None
         self.clf = clf.eval().to(device=self.device)
-        loader_te = DataLoader(test_dataset, shuffle=False, pin_memory=True, batch_size=self.cfg.batch_size, num_workers=8)
+        loader_te = DataLoader(test_dataset, shuffle=False, pin_memory=True, batch_size=self.cfg.batch_size, num_workers=os.cpu_count())
         loop = tqdm(loader_te, unit='batch', desc='| Test |', dynamic_ncols=True)
 
         binary_correct = [0.]*2; binary_total = [0.]*2
@@ -116,7 +117,7 @@ class data_train:
     def _train(self, epoch, loader_tr, optimizer, criterion, scaler):
         accFinal = 0.
         lossFinal = 0.
-        
+
         loop = tqdm(loader_tr, unit='batch', desc='| Training |', dynamic_ncols=True)
         for _, (x, y, _) in enumerate(loop):
             x, y = x.to(device=self.device), y.to(device=self.device)
@@ -140,7 +141,7 @@ class data_train:
 
         """
         Initiates the training loop.
-        
+
         Parameters
         ----------
         classes: list
@@ -169,7 +170,7 @@ class data_train:
                 self.net.load_state_dict(state_dict, strict=False)
             else:
                 self.clf = self.net.apply(weight_reset)
-        
+
         # DataParallel
         device_ids = []
         for i in range(torch.cuda.device_count()):
@@ -178,11 +179,9 @@ class data_train:
         self.net = torch.nn.DataParallel(self.net, device_ids=device_ids)
         self.clf = self.net.to(device=self.device)
 
-        batch_size = self.cfg.batch_size
-        batch_size *= len(device_ids)
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)
         lr_sched = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.cfg.n_epoch)
-        loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=8)
+        loader_tr = DataLoader(self.training_dataset, batch_size=self.cfg.batch_size, shuffle=True, pin_memory=True, num_workers=os.cpu_count())
         criterion = nn.CrossEntropyLoss()
         scaler = torch.cuda.amp.GradScaler()
 
@@ -235,9 +234,7 @@ class data_train:
         self.clf = torch.nn.parallel.DistributedDataParallel(self.net, device_ids=[rank], find_unused_parameters=True)
         sampler = DistributedSampler(self.training_dataset, num_replicas=torch.cuda.device_count(), rank=rank, shuffle=True)
 
-        batch_size = self.cfg.batch_size
-        batch_size *= torch.cuda.device_count()
-        loader_tr = DataLoader(self.training_dataset, batch_size=batch_size, pin_memory=True, num_workers=8, sampler=sampler)
+        loader_tr = DataLoader(self.training_dataset, batch_size=self.cfg.batch_size, pin_memory=True, num_workers=os.cpu_count(), sampler=sampler)
         criterion = nn.CrossEntropyLoss()
         scaler = torch.cuda.amp.GradScaler()
         optimizer = optim.SGD(self.clf.parameters(), lr = self.cfg.lr, momentum=0.9, weight_decay=5e-4)

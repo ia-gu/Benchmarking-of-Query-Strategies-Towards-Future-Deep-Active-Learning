@@ -4,7 +4,7 @@ from PIL import Image
 import os
 
 '''
-Official BrainTumor dataset is released by MATLAB, so we need to 
+Official BrainTumor dataset is released by MATLAB, so we need to
 reconstruct to .png data.
 '''
 

@@ -1,6 +1,6 @@
 mlflow_runname: base
 
-train_parameters: 
+train_parameters:
   lr: 0.01
   batch_size: 20
   seed: 9999

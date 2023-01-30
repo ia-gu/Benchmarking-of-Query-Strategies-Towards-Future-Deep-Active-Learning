@@ -6,9 +6,10 @@ import logging
 
 import torch
 from torch.utils.data import DataLoader
+from matplotlib import font_manager
 
 class Logger():
-    
+
     def __init__(self, log_path):
         self.log_path = log_path
         self.train_acc = []; self.train_loss = []
@@ -16,6 +17,9 @@ class Logger():
         self.precision = []; self.recall = []
         self.f_score = []
         self.rd = 0
+        font_manager.fontManager.addfont("/home/ueno/fonts/times.ttf")
+        plt.rcParams["font.family"] = "Times New Roman"
+        plt.rcParams['mathtext.fontset'] = 'stix'
 
     def get_hist(self, trainset, classes):
         self.train_points = len(trainset)
@@ -28,18 +32,22 @@ class Logger():
                 hist[i] += 1
         fig = plt.figure()
         plt.bar(classes, hist, width=0.9)
-        plt.xlabel('classes')
-        plt.ylabel('number of queried data')
+        plt.xlabel('Classes')
+        plt.ylabel('Number of queried data')
         fig.savefig(os.path.join(self.log_path, 'hist', str(self.rd)+'.png'))
         plt.clf()
         plt.close()
-    
+        with open(self.log_path+'/hist.csv', mode='a') as f:
+            writer = csv.writer(f)
+            writer.writerow([self.rd])
+            writer.writerow(hist)
+
     def save_weight(self, clf):
         if 'module' in [i for i,_ in clf.named_parameters()][0].split('.'):
             torch.save(clf.module.state_dict(), self.log_path+'/weight'+str(self.rd)+'.pth')
         else:
             torch.save(clf.state_dict(), self.log_path+'/weight'+str(self.rd)+'.pth')
-    
+
     def write_train_log(self):
         for i in range(len(self.train_acc)):
             mlflow.log_metric('acc', self.train_acc[i])
@@ -65,7 +73,7 @@ class Logger():
             mlflow.log_metric('recall', self.recall[-1], step=self.train_points)
             mlflow.log_metric('f_score', self.f_score[-1], step=self.train_points)
         else: self.test_binary_acc.append(0)
-            
+
         mlflow.log_metric('test_acc', self.test_acc[-1], step=self.train_points)
         mlflow.log_metric('binary_test_acc', self.test_binary_acc[-1], step=self.train_points)
         logging.info(f'training points: {self.train_points}')

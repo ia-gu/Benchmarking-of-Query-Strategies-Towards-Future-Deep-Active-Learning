@@ -37,10 +37,10 @@ def main(cfg : DictConfig):
             gpu_ids=[]
             for i in range(torch.cuda.device_count()):
                 gpu_ids.append(i)
-            
+
             # fit batch_size
             cfg.train_parameters.batch_size = int(cfg.train_parameters.batch_size/8*len(gpu_ids))
-            
+
             main_worker(device, gpu_ids, cfg)
 
 def main_worker(device, gpu_ids, cfg):
@@ -48,7 +48,7 @@ def main_worker(device, gpu_ids, cfg):
     # model
     model = builder.SimSiam(ResNet18, cfg.train_parameters.dim, cfg.train_parameters.pred_dim) if cfg.dataset.name == 'CIFAR10' \
     else    builder.SimSiam(OriginalResNet, cfg.train_parameters.dim, cfg.train_parameters.pred_dim)
-    
+
     # resume pretraining
     if cfg.train_parameters.start_epoch > 0:
         model.load_state_dict(torch.load('weights/'+cfg.dataset.name+'/'+str(cfg.train_parameters.seed)+'/checkpoint.pth.tar')['state_dict'])
@@ -62,7 +62,7 @@ def main_worker(device, gpu_ids, cfg):
                         {'params': model.module.predictor.parameters(), 'fix_lr': True}]
     else:
         optim_params = model.parameters()
-    
+
     optimizer = torch.optim.SGD(optim_params, init_lr, momentum=0.9, weight_decay=1e-4)
     train_loader = get_dataloader(cfg)
     criterion = nn.CosineSimilarity(dim=1).to(device)
