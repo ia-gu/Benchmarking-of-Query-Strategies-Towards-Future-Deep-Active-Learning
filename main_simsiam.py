@@ -13,8 +13,7 @@ import src.simsiam.utils.builder as builder
 from src.simsiam.utils.loader import get_dataloader
 from src.simsiam.utils.train import train
 from src.simsiam.utils.utils import adjust_learning_rate, save_checkpoint
-from src.utils.models.resnet import OriginalResNet
-from src.utils.models.resnet import ResNet18
+from src.utils.models.resnet import OriginalResNet, ResNet18
 
 @hydra.main(config_name='ssl_config', config_path='configs', version_base='1.1')
 def main(cfg : DictConfig):
@@ -37,9 +36,6 @@ def main(cfg : DictConfig):
             gpu_ids=[]
             for i in range(torch.cuda.device_count()):
                 gpu_ids.append(i)
-
-            # fit batch_size
-            cfg.train_parameters.batch_size = int(cfg.train_parameters.batch_size/8*len(gpu_ids))
 
             main_worker(device, gpu_ids, cfg)
 

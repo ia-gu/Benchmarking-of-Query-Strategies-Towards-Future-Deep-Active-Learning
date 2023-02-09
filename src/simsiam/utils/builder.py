@@ -2,14 +2,14 @@ import torch.nn as nn
 
 
 class SimSiam(nn.Module):
-    """
+    '''
     Build a SimSiam model.
-    """
+    '''
     def __init__(self, base_encoder, dim=2048, pred_dim=512):
-        """
+        '''
         dim: feature dimension (default: 2048)
         pred_dim: hidden dimension of the predictor (default: 512)
-        """
+        '''
         super(SimSiam, self).__init__()
 
         # create the encoder
@@ -35,14 +35,14 @@ class SimSiam(nn.Module):
                                         nn.Linear(pred_dim, dim))
 
     def forward(self, x1, x2):
-        """
+        '''
         Input:
             x1: first views of images
             x2: second views of images
         Output:
             p1, p2, z1, z2: predictors and targets of the network
             See Sec. 3 of https://arxiv.org/abs/2011.10566 for detailed notations
-        """
+        '''
 
         z1 = self.encoder(x1)
         z2 = self.encoder(x2)

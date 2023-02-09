@@ -12,7 +12,6 @@ def init_centers(X, K, device):
     indsAll = [ind]
     centInds = [0.] * len(X)
     cent = 0
-    #print('#Samps\tTotal Distance')
     while len(mu) < K:
         if len(mu) == 1:
             D2 = pdist(torch.from_numpy(X).to(device), torch.from_numpy(mu[-1]).to(device))
@@ -37,7 +36,7 @@ def init_centers(X, K, device):
     return indsAll
 
 class BADGE(Strategy):
-    """
+    '''
     This method is based on the paper Deep Batch Active Learning by Diverse, Uncertain Gradient 
     Lower Bounds :footcite:`DBLP-Badge`. According to the paper, this strategy, Batch Active 
     learning by Diverse Gradient Embeddings (BADGE), samples groups of points that are disparate 
@@ -62,13 +61,13 @@ class BADGE(Strategy):
         Specify additional parameters
         
         - **batch_size**: The batch size used internally for torch.utils.data.DataLoader objects. (int, optional)
-    """
+    '''
     
     def __init__(self, labeled_dataset, unlabeled_dataset, net, nclasses, cfg=None): 
         super(BADGE, self).__init__(labeled_dataset, unlabeled_dataset, net, nclasses, cfg=cfg)        
         
     def select(self, budget):
-        """
+        '''
         Selects next set of points
         
         Parameters
@@ -80,9 +79,9 @@ class BADGE(Strategy):
         ----------
         idxs: list
             List of selected data point indices with respect to unlabeled_dataset
-        """	
+        '''	
 
         self.model.eval()
-        gradEmbedding = self.get_grad_embedding(self.unlabeled_dataset, True, "fc")
+        gradEmbedding = self.get_grad_embedding(self.unlabeled_dataset, True, 'fc')
         chosen = init_centers(gradEmbedding.cpu().numpy(), budget, self.device)
         return chosen

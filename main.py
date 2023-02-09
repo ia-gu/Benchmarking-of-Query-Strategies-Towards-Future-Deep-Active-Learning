@@ -23,13 +23,13 @@ from src.utils.utils import LabeledToUnlabeledDataset
 
 class TrainClassifier:
 
-    def __init__(self, cfg, log_path,):
+    def __init__(self, cfg, log_path):
         self.cfg = cfg
         self.log_path = log_path
         self.model_name = 'resnet'
         self.channels = 1
 
-    def getModel(self,):
+    def getModel(self):
         net = OriginalResNet(num_classes=len(self.classes), channels=self.channels) if self.model_name=='resnet' \
         else  ResNet18(num_classes=len(self.classes), channels=self.channels)
 

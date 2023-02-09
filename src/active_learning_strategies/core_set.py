@@ -41,7 +41,7 @@ class CoreSet(Strategy):
         idxs = []
         for _ in range(n):
             idx = torch.argmax(min_dist)
-            # to avoid uerying the same sample repeatedly
+            # to avoid querying the same sample repeatedly
             min_dist[idx] = -np.inf
             idxs.append(idx.item())
             dist_new_ctr = torch.cdist(unlabeled_embeddings, unlabeled_embeddings[[idx],:])
