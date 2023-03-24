@@ -9,7 +9,7 @@ def get_data(data_cfg):
         model_name = 'modified_resnet'
         channels = 3
         classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-        download_path = './downloaded_data/'
+        download_path = '/localdata/cifar10'
         train_transform = transforms.Compose([transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
         test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
         train_dataset = datasets.CIFAR10(download_path, download=True, train=True, transform=train_transform, target_transform=torch.tensor)
@@ -18,8 +18,8 @@ def get_data(data_cfg):
     elif data_cfg.name == 'EuroSAT':
         channels = 3
         classes = ('AnnualCrop', 'Forest', 'Herbaceous', 'Highway', 'Industrial', 'Pasture', 'PermanentCrop', 'Residential', 'River', 'SeaLake')
-        train_data_path = '/data/dataset/eurosat/train'
-        test_data_path = '/data/dataset/eurosat/test'
+        train_data_path = '/localdata/eurosat/train'
+        test_data_path = '/localdata/eurosat/test'
         train_transform = transforms.Compose([transforms.RandomVerticalFlip(), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
@@ -27,8 +27,8 @@ def get_data(data_cfg):
 
     elif data_cfg.name == 'BrainTumor':
         classes = ('Glioma', 'Meningioma', 'Pituitary')
-        train_data_path = '/data/dataset/brain_tumor/BrainTumor'
-        test_data_path = '/data/dataset/brain_tumor/BrainTumor/5'
+        train_data_path = '/localdata/brain_tumor/BrainTumor'
+        test_data_path = '/localdata/brain_tumor/BrainTumor/5'
         train_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         test_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         train_dataset = datasets.ImageFolder(root=train_data_path+'/'+str(1), transform=train_transform)
@@ -38,8 +38,8 @@ def get_data(data_cfg):
 
     elif data_cfg.name == 'OCT':
         classes = ('CNV', 'DME', 'DRUSEN', 'NORMAL')
-        train_data_path = '/data/dataset/oct_modified/train'
-        test_data_path = '/data/dataset/oct_modified/test'
+        train_data_path = '/localdata/oct_modified/train'
+        test_data_path = '/localdata/oct_modified/test'
         train_transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         test_transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
@@ -47,8 +47,8 @@ def get_data(data_cfg):
     
     elif data_cfg.name == 'GAPs':
         classes = ('AppliedPatch', 'Crack', 'InlaidPatch', 'IntactRoad', 'OpenJoint', 'Pothol')
-        train_data_path = '/data/dataset/gaps/train'
-        test_data_path = '/data/dataset/gaps/test'
+        train_data_path = '/localdata/gaps/train'
+        test_data_path = '/localdata/gaps/test'
         train_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)
@@ -56,8 +56,8 @@ def get_data(data_cfg):
 
     elif data_cfg.name == 'KSDD2':
         classes = ('NG', 'OK')
-        train_data_path = '/data/dataset/ksdd2/train'
-        test_data_path = '/data/dataset/ksdd2/test'
+        train_data_path = '/localdata/ksdd2/train'
+        test_data_path = '/localdata/ksdd2/test'
         train_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         test_transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         train_dataset = datasets.ImageFolder(root=train_data_path, transform=train_transform)

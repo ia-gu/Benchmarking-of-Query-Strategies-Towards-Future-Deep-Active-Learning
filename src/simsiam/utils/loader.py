@@ -41,7 +41,7 @@ def get_dataloader(cfg):
             transforms.ToTensor(),
             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ]
-        traindir = '/data/dataset/cifar10/train'
+        traindir = '/localdata/cifar10/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             TwoCropsTransform(transforms.Compose(augmentation)))
@@ -56,7 +56,7 @@ def get_dataloader(cfg):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
-        traindir = '/data/dataset/eurosat/train'
+        traindir = '/localdata/eurosat/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             TwoCropsTransform(transforms.Compose(augmentation)))
@@ -70,7 +70,7 @@ def get_dataloader(cfg):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
-        traindir = '/data/dataset/brain_tumor/BrainTumor'
+        traindir = '/localdata/brain_tumor/BrainTumor'
         train_dataset = datasets.ImageFolder(root=traindir+'/'+str(1), transform=TwoCropsTransform(transforms.Compose(augmentation)))
         for i in range(2, 5):
             train_dataset = ConcatDataset([train_dataset, (datasets.ImageFolder(root=traindir+'/'+str(i), transform=TwoCropsTransform(transforms.Compose(augmentation))))])
@@ -84,7 +84,7 @@ def get_dataloader(cfg):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
-        traindir = '/data/dataset/oct_modified/train'
+        traindir = '/localdata/oct_modified/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             TwoCropsTransform(transforms.Compose(augmentation)))
@@ -98,7 +98,7 @@ def get_dataloader(cfg):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
-        traindir = '/data/dataset/gaps/train'
+        traindir = '/localdata/gaps/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             TwoCropsTransform(transforms.Compose(augmentation)))
@@ -112,7 +112,7 @@ def get_dataloader(cfg):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
-        traindir = '/data/dataset/ksdd2/train'
+        traindir = '/localdata/ksdd2/train'
         train_dataset = datasets.ImageFolder(
             traindir,
             TwoCropsTransform(transforms.Compose(augmentation)))
