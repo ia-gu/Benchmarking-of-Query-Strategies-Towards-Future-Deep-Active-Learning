@@ -10,7 +10,7 @@ train_parameters:
   n_epoch: 800
   dim: 2048
   pred_dim: 512
-  fix_pred_lr: false
+  fix_pred_lr: true
 
 defaults: 
   - dataset: CIFAR10
