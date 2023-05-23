@@ -1,4 +1,4 @@
-# Active-Learning-benchmark-tool
+# Benchmarking of Query Strategies: Towards Future Deep Active Learning
 
 The repository contains a Benchmark Tool for Active Learning, SimSiam Pre-training in Python/Pytorch.
 
