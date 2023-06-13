@@ -2,7 +2,7 @@
 
 The repository contains a Benchmark Tool for Active Learning, SimSiam Pre-training in Python/Pytorch.
 
-The repository is based on [our paper]()
+The repository is based on [our paper (not open now)]()
 
 ## Summary
 
@@ -26,7 +26,7 @@ Some of the algorithms currently implemented here include the following:
     - [GLISTER](https://arxiv.org/abs/2012.10630)
     - [Cluster Margin Sampling](https://arxiv.org/abs/2107.14263)
 
-If you want to know the detail of each implementations, refer original paper or [ours]().
+<!-- If you want to know the detail of each implementations, refer original paper or [ours](). -->
 
 We use [SimSiam](https://github.com/facebookresearch/simsiam) as the SSL pretraining task. This is based on the idea from [here](https://arxiv.org/abs/2011.10566)
 
