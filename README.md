@@ -93,12 +93,13 @@ ImageNet Implementation setting is below
 ## How to use
 Clone this repository, modify data_path and implement below for AL
 
-```python main.py```
+```python main.py al_method=[query_strategy] dataset=[dataset] ...```
 
 Implement below for SSL
 
-```python main_simsiam.py```
+```python main_simsiam.py dataset=[dataset] ...```
 
+Other hyperparameters can be changed based on configs.
 ## Some more details
 
 We prepare two types of ResNet18. One is the original model given by distil, other is from [here](https://github.com/kuangliu/pytorch-cifar).
