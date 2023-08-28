@@ -15,7 +15,7 @@ from src.simsiam.utils.train import train
 from src.simsiam.utils.utils import adjust_learning_rate, save_checkpoint
 from src.utils.models.resnet import OriginalResNet, ResNet18
 
-@hydra.main(config_name='ssl_config', config_path='configs', version_base='1.1')
+@hydra.main(config_name='ssl_config', config_path='configs')
 def main(cfg : DictConfig):
         mlflow.set_tracking_uri('file://' + hydra.utils.get_original_cwd() + '/mlruns')
         mlflow.set_experiment(cfg.mlflow_runname)

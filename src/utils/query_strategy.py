@@ -1,12 +1,10 @@
-from src.active_learning_strategies import GLISTER, BADGE, EntropySampling, RandomSampling, LeastConfidenceSampling, \
+from src.active_learning_strategies import BADGE, EntropySampling, RandomSampling, LeastConfidenceSampling, \
                                         MarginSampling, CoreSet, AdversarialBIM, AdversarialDeepFool, KMeansSampling, \
-                                        BALDDropout, FASS, BatchBALDDropout, SubmodularSampling, ClusterMarginSampling
+                                        BALDDropout, BatchBALDDropout, ClusterMarginSampling
 
 def get_strategy(train_dataset, labeled_dataset, net, num_classes, cfg):
     if cfg.strategy == 'badge':
         strategy = BADGE(train_dataset, labeled_dataset, net, num_classes, cfg)
-    elif cfg.strategy == 'glister':
-        strategy = GLISTER(train_dataset, labeled_dataset, net, num_classes, cfg)
     elif cfg.strategy == 'entropy_sampling':
         strategy = EntropySampling(train_dataset, labeled_dataset, net, num_classes, cfg)
     elif cfg.strategy == 'margin_sampling':
@@ -15,8 +13,6 @@ def get_strategy(train_dataset, labeled_dataset, net, num_classes, cfg):
         strategy = LeastConfidenceSampling(train_dataset, labeled_dataset, net, num_classes, cfg)
     elif cfg.strategy == 'coreset':
         strategy = CoreSet(train_dataset, labeled_dataset, net, num_classes, cfg)
-    elif cfg.strategy == 'fass':
-        strategy = FASS(train_dataset, labeled_dataset, net, num_classes, cfg)
     elif cfg.strategy == 'random_sampling':
         strategy = RandomSampling(train_dataset, labeled_dataset, net, num_classes, cfg)
     elif cfg.strategy == 'bald_dropout':
@@ -29,8 +25,6 @@ def get_strategy(train_dataset, labeled_dataset, net, num_classes, cfg):
         strategy = AdversarialDeepFool(train_dataset, labeled_dataset, net, num_classes, cfg)
     elif cfg.strategy == 'batch_bald':
         strategy = BatchBALDDropout(train_dataset, labeled_dataset, net, num_classes, cfg)
-    elif cfg.strategy == 'submodlib':
-        strategy = SubmodularSampling(train_dataset, labeled_dataset, net, num_classes, cfg)
     elif cfg.strategy == 'cluster_margin':
         strategy = ClusterMarginSampling(train_dataset, labeled_dataset, net, num_classes, cfg)
     else:

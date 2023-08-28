@@ -101,7 +101,7 @@ class TrainClassifier:
         print('Training Completed!')
         logger.show_result(self.cfg.train_parameters.seed)
 
-@hydra.main(config_name='base', config_path='configs', version_base='1.1')
+@hydra.main(config_name='base', config_path='configs')
 def main(cfg : DictConfig):
     mlflow.set_tracking_uri('file://' + hydra.utils.get_original_cwd() + '/mlruns')
     mlflow.set_experiment(cfg.mlflow_runname)

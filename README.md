@@ -2,9 +2,16 @@
 
 The repository contains a Benchmark Tool for Active Learning, SimSiam Pre-training in Python/Pytorch.
 
-The repository is based on [our paper (not open now)]()
+The repository is an official implementation of [our paper (not open now)]()
 
-## Summary
+## Install
+```
+conda create -n [environment_name] python -y
+conda activate [environment_name]
+pip install -r requirements.txt
+```
+
+## About this repository
 
 Some of the algorithms currently implemented here include the following:
 
